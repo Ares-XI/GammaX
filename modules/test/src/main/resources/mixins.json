@@ -1,0 +1,5 @@
+{
+  "mixins": [
+    "io.gammax.test.mixin.VectorMixin"
+  ]
+}

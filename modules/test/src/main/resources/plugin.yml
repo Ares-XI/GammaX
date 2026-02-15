@@ -1,0 +1,13 @@
+name: test
+version: '1.0'
+main: io.gammax.test.TestPlugin
+api-version: '1.21'
+authors: [Dark_IIX]
+description: add death warrior display
+commands:
+  test-vector:
+    description: "test command"
+    aliases:
+      - tv
+      - testv
+      - tvector

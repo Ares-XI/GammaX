@@ -12,6 +12,7 @@ modules/test/dependency-reduced-pom.xml
 *.iws
 *.iml
 *.ipr
+.idea
 
 ### Eclipse ###
 .apt_generated

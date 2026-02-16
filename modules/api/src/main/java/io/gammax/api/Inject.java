@@ -2,7 +2,7 @@ package io.gammax.api;
 
 import io.gammax.api.enums.InjectAt;
 import io.gammax.api.util.Signature;
-import io.gammax.api.enums.Shift;
+import io.gammax.api.enums.Mode;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -23,8 +23,8 @@ public @interface Inject {
     @interface At {
         InjectAt value();
 
-        Shift shift() default Shift.BEFORE;
+        Mode mode() default Mode.BEFORE;
 
-        int by() default 0;
+        int index() default 0;
     }
 }

@@ -1,6 +1,7 @@
 package io.gammax.api.enums;
 
-public enum Shift {
+public enum Mode {
     BEFORE,
+    CANSEL,
     AFTER,
 }

@@ -1,5 +1,6 @@
 {
   "mixins": [
-    "io.gammax.test.mixin.VectorMixin"
+    "io.gammax.test.mixin.VectorMixin",
+    "io.gammax.test.mixin.BoundingBoxMixin"
   ]
 }

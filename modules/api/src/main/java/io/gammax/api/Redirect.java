@@ -2,7 +2,7 @@ package io.gammax.api;
 
 import io.gammax.api.enums.RedirectAt;
 import io.gammax.api.util.Signature;
-import io.gammax.api.enums.Shift;
+import io.gammax.api.enums.Mode;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -23,7 +23,7 @@ public @interface Redirect {
     @interface At {
         RedirectAt type();
 
-        Shift shift() default Shift.BEFORE;
+        Mode shift() default Mode.BEFORE;
 
         int by() default 0;
     }

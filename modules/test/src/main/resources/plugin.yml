@@ -11,3 +11,9 @@ commands:
       - tv
       - testv
       - tvector
+  test-box:
+    description: "test command"
+    aliases:
+      - tb
+      - testb
+      - tbox

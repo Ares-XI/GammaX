@@ -8,7 +8,7 @@ public class MixinStart {
         System.out.println("|| GammaX started! Version: 1.0 alpha");
         System.out.println("=====================================");
 
-        MixinRegistry.loadMixins();
+        MixinRegistry.loadCache();
         inst.addTransformer(new MixinTransformer());
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

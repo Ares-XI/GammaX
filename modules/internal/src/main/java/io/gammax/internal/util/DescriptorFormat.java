@@ -1,12 +1,20 @@
 package io.gammax.internal.util;
 
+import io.gammax.api.enums.InjectAt;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
-public class DescriptorFormat {
+import static io.gammax.api.enums.InjectAt.*;
+import static io.gammax.api.enums.RedirectAt.INVOKE;
 
+public class DescriptorFormat {
     public static int getAccessModifiers(Field field) {
         int modifiers = field.getModifiers();
         int access = 0;
@@ -60,6 +68,42 @@ public class DescriptorFormat {
 
         if (type.isArray()) return "[" + getDescriptor(type.getComponentType());
         return "L" + type.getName().replace('.', '/') + ";";
+    }
+
+    public static int getLoadOpcode(Class<?> type) {
+        if (type == int.class || type == boolean.class || type == byte.class || type == char.class || type == short.class) return Opcodes.ILOAD;
+        if (type == long.class) return Opcodes.LLOAD;
+        if (type == float.class) return Opcodes.FLOAD;
+        if (type == double.class) return Opcodes.DLOAD;
+        return Opcodes.ALOAD;
+    }
+
+    public static int getParamIndex(MethodNode method, int paramIndex, int startIndex) {
+        int index = startIndex;
+        Type[] argTypes = Type.getArgumentTypes(method.desc);
+        for (int i = 0; i < paramIndex; i++) {
+            index += argTypes[i].getSize();
+        }
+        return index;
+    }
+
+    public static boolean matches(AbstractInsnNode insn, InjectAt injectAt) {
+        return switch (injectAt) {
+            case HEAD -> false;
+            case RETURN -> insn.getOpcode() >= Opcodes.IRETURN && insn.getOpcode() <= Opcodes.RETURN;
+            case INVOKE -> insn instanceof MethodInsnNode;
+            case NEW -> insn.getOpcode() == Opcodes.NEW;
+            case GET_FIELD -> insn.getOpcode() == Opcodes.GETFIELD;
+            case PUT_FIELD -> insn.getOpcode() == Opcodes.PUTFIELD;
+            case GET_STATIC -> insn.getOpcode() == Opcodes.GETSTATIC;
+            case PUT_STATIC -> insn.getOpcode() == Opcodes.PUTSTATIC;
+            case ARRAY_LENGTH -> insn.getOpcode() == Opcodes.ARRAYLENGTH;
+            case MONITOR_ENTER -> insn.getOpcode() == Opcodes.MONITORENTER;
+            case MONITOR_EXIT -> insn.getOpcode() == Opcodes.MONITOREXIT;
+            case CHECKCAST -> insn.getOpcode() == Opcodes.CHECKCAST;
+            case INSTANCEOF -> insn.getOpcode() == Opcodes.INSTANCEOF;
+            default -> false;
+        };
     }
 
     private DescriptorFormat() {}

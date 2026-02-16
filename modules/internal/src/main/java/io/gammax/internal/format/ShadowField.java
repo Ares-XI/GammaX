@@ -7,13 +7,17 @@ import org.objectweb.asm.*;
 import java.lang.reflect.Field;
 
 public class ShadowField {
-    public final Field field;
+    private final Field field;
     private final String targetOwner;
 
     public ShadowField(Field field) {
         this.field = field;
         Class<?> targetClass = field.getDeclaringClass().getAnnotation(Mixin.class).target();
         this.targetOwner = targetClass.getName().replace('.', '/');
+    }
+
+    public Field getField() {
+        return field;
     }
 
     public byte[] provideField(byte[] mixinBytes) {

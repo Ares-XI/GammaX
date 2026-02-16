@@ -7,12 +7,16 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
 public class UniqueField {
-    public final Field field;
+    private final Field field;
     private Object constantValue;
 
     public UniqueField(Field field) {
         this.field = field;
         if (Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())) extractConstantValue();
+    }
+
+    public Field getField() {
+        return field;
     }
 
     private void extractConstantValue() {

@@ -7,7 +7,7 @@ import org.objectweb.asm.*;
 import java.lang.reflect.Method;
 
 public class ShadowMethod {
-    public final Method method;
+    private final Method method;
     private final String targetOwner;
 
     public ShadowMethod(Method method) {
@@ -16,6 +16,10 @@ public class ShadowMethod {
         Class<?> targetClass = method.getDeclaringClass().getAnnotation(Mixin.class).target();
 
         this.targetOwner = targetClass.getName().replace('.', '/');
+    }
+
+    public Method getMethod() {
+        return method;
     }
 
     public byte[] provideMethod(byte[] mixinBytes) {

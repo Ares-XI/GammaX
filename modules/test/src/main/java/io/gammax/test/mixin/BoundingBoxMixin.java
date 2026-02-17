@@ -38,12 +38,9 @@ public abstract class BoundingBoxMixin {
 
     @Inject(method = "<init>", at = @Inject.At(value = InjectAt.RETURN, mode = Mode.CANSEL))
     private void init() {
+        System.out.println();
         System.out.println("Создан экземпляр значение modifier на: 2");
         modifier = 2.0;
-    }
-
-    @Unique
-    private void testResize() {
         System.out.println("Сумма всех значений: " + minX + minZ + minZ + maxX + maxY + maxZ);
         System.out.println("Умножаю modifier самого на себя");
         modifier = modifier * modifier;
@@ -57,5 +54,33 @@ public abstract class BoundingBoxMixin {
         System.out.println("Выполняю resize");
         BoundingBox box = resize(minX, minY, minZ, maxX, maxY, maxZ);
         System.out.println("Новый хитбокс: " + box);
+        System.out.println("вызываю метод testResize()");
+        testResize();
+    }
+
+    @Unique
+    private double multiply(double number, double modifier) {
+        return number * modifier;
+    }
+
+    @Unique
+    private void testResize() {
+        System.out.println();
+        System.out.println("Вызван метод testResize()");
+        System.out.println("Сумма всех значений: " + minX + minZ + minZ + maxX + maxY + maxZ);
+        System.out.println("Умножаю modifier самого на себя");
+        modifier = modifier * modifier;
+        System.out.println("Умножаю все значения на модификатор");
+        minX *= modifier;
+        minY *= modifier;
+        minZ *= modifier;
+        maxX *= modifier;
+        maxY *= modifier;
+        maxZ *= modifier;
+        System.out.println("Выполняю resize");
+        BoundingBox box = resize(minX, minY, minZ, maxX, maxY, maxZ);
+        System.out.println("Новый хитбокс: " + box);
+        System.out.println("Вызываю метод multiply(double number, int modifier), minX = " + minX);
+        minX = multiply(minX, modifier);
     }
 }

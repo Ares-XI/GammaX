@@ -22,7 +22,6 @@ public class UniqueMethod {
 
         buildFieldMap(shadowFields, uniqueFields);
         buildMethodMap(shadowMethods, uniqueMethods);
-        extractMethodInstructions();
     }
 
     public Method getMethod() {
@@ -33,10 +32,10 @@ public class UniqueMethod {
         String targetName = targetClass.getName().replace('.', '/');
 
         for (UniqueMethod um : allUniqueMethods) {
-            String key = um.getMethod().getName() + ":" +
-                    DescriptorFormat.getMethodDescriptor(um.getMethod());
+            String key = um.getMethod().getName() + ":" + DescriptorFormat.getMethodDescriptor(um.getMethod());
             visitor.methodMap.put(key, targetName);
         }
+        extractMethodInstructions();
     }
 
     private void buildFieldMap(ShadowField[] shadowFields, UniqueField[] uniqueFields) {

@@ -29,7 +29,7 @@ public class MixinRegistry {
         return loader;
     }
 
-    public static MixinJarRegister getJars() {
+    public static MixinJarRegister getMixinJarRegister() {
         return jars;
     }
 
@@ -61,7 +61,7 @@ public class MixinRegistry {
                     List<ShadowField> shadowFieldsList = new ArrayList<>();
                     List<ShadowMethod> shadowMethodsList = new ArrayList<>();
                     List<UniqueField> uniqueFieldsList = new ArrayList<>();
-                    List<UniqueMethod> uniqueMethodsList = new ArrayList<>();
+                    List<UniqueMethod> tempUniqueMethods = new ArrayList<>();
                     List<InjectMethod> injectMethodsList = new ArrayList<>();
 
                     List<Method> uniqueMethods = new ArrayList<>();
@@ -93,15 +93,17 @@ public class MixinRegistry {
                     if(clazz.isAnnotationPresent(Mixin.class)) {
                         Class<?> targetClass = clazz.getAnnotation(Mixin.class).target();
                         for (Method method : uniqueMethods) {
-                            uniqueMethodsList.add(
+                            tempUniqueMethods.add(
                                     new UniqueMethod(
                                             method, targetClass,
                                             shadowFieldsList.toArray(new ShadowField[0]),
                                             shadowMethodsList.toArray(new ShadowMethod[0]),
-                                            uniqueFieldsList.toArray(new UniqueField[0])
+                                            uniqueFieldsList.toArray(new UniqueField[0]),
+                                            new UniqueMethod[0]
                                     )
                             );
                         }
+                        for (UniqueMethod um : tempUniqueMethods) um.updateMethodMap(tempUniqueMethods.toArray(new UniqueMethod[0]));
                         for(Method method: injectMethods) {
                             injectMethodsList.add(
                                     new InjectMethod(
@@ -110,7 +112,7 @@ public class MixinRegistry {
                                             shadowFieldsList.toArray(new ShadowField[0]),
                                             uniqueFieldsList.toArray(new UniqueField[0]),
                                             shadowMethodsList.toArray(new ShadowMethod[0]),
-                                            uniqueMethodsList.toArray(new UniqueMethod[0])
+                                            tempUniqueMethods.toArray(new UniqueMethod[0])
                                     )
                             );
                         }
@@ -121,7 +123,7 @@ public class MixinRegistry {
                             shadowFieldsList.toArray(new ShadowField[0]),
                             uniqueFieldsList.toArray(new UniqueField[0]),
                             shadowMethodsList.toArray(new ShadowMethod[0]),
-                            uniqueMethodsList.toArray(new UniqueMethod[0]),
+                            tempUniqueMethods.toArray(new UniqueMethod[0]),
                             injectMethodsList.toArray(new InjectMethod[0])
                     );
 

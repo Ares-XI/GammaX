@@ -15,18 +15,28 @@ public class UniqueMethod {
     private InsnList instructions;
     public UniqueMethodVisitor visitor;
 
-    public UniqueMethod(Method method, Class<?> targetClass, ShadowField[] shadowFields, ShadowMethod[] shadowMethods, UniqueField[] uniqueFields) {
+    public UniqueMethod(Method method, Class<?> targetClass, ShadowField[] shadowFields, ShadowMethod[] shadowMethods, UniqueField[] uniqueFields, UniqueMethod[] uniqueMethods) {
         this.method = method;
         this.targetClass = targetClass;
         this.visitor = new UniqueMethodVisitor();
 
         buildFieldMap(shadowFields, uniqueFields);
-        buildMethodMap(shadowMethods);
+        buildMethodMap(shadowMethods, uniqueMethods);
         extractMethodInstructions();
     }
 
     public Method getMethod() {
         return method;
+    }
+
+    public void updateMethodMap(UniqueMethod[] allUniqueMethods) {
+        String targetName = targetClass.getName().replace('.', '/');
+
+        for (UniqueMethod um : allUniqueMethods) {
+            String key = um.getMethod().getName() + ":" +
+                    DescriptorFormat.getMethodDescriptor(um.getMethod());
+            visitor.methodMap.put(key, targetName);
+        }
     }
 
     private void buildFieldMap(ShadowField[] shadowFields, UniqueField[] uniqueFields) {
@@ -40,9 +50,13 @@ public class UniqueMethod {
         }
     }
 
-    private void buildMethodMap(ShadowMethod[] shadowMethods) {
+    private void buildMethodMap(ShadowMethod[] shadowMethods, UniqueMethod[] uniqueMethods) {
         for (ShadowMethod sm : shadowMethods) {
             String key = sm.getMethod().getName() + ":" + DescriptorFormat.getMethodDescriptor(sm.getMethod());
+            visitor.methodMap.put(key, targetClass.getName().replace('.', '/'));
+        }
+        for (UniqueMethod um: uniqueMethods) {
+            String key = um.getMethod().getName() + ":" + DescriptorFormat.getMethodDescriptor(um.getMethod());
             visitor.methodMap.put(key, targetClass.getName().replace('.', '/'));
         }
     }

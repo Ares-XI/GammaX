@@ -20,7 +20,7 @@ public class MixinJsonParser {
             if (dir.exists() && dir.isDirectory()) {
                 for(File jarFile: findJarsWithMixins(dir)) {
                     try {
-                        MixinRegistry.getJars().registerJar(jarFile);
+                        MixinRegistry.getMixinJarRegister().registerJar(jarFile);
                     } catch (Exception e) {
                         e.printStackTrace(System.err);
                     }
@@ -37,7 +37,7 @@ public class MixinJsonParser {
                 File jarFile = new File(part);
                 if (jarFile.exists()) {
                     try {
-                        MixinRegistry.getJars().registerJar(jarFile);
+                        MixinRegistry.getMixinJarRegister().registerJar(jarFile);
                     } catch (Exception e) {
                         e.printStackTrace(System.err);
                     }
@@ -53,7 +53,7 @@ public class MixinJsonParser {
                     try {
                         try (JarFile jar = new JarFile(jarFile)) {
                             if (jar.getJarEntry("mixins.json") != null) {
-                                MixinRegistry.getJars().registerJar(jarFile);
+                                MixinRegistry.getMixinJarRegister().registerJar(jarFile);
                                 parseConfigFromJar(jar, result);
                             }
                         }
@@ -101,6 +101,6 @@ public class MixinJsonParser {
     }
 
     public void close() {
-        MixinRegistry.getJars().close();
+        MixinRegistry.getMixinJarRegister().close();
     }
 }

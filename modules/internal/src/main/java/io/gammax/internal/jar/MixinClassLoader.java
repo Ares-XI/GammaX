@@ -36,7 +36,7 @@ public class MixinClassLoader extends ClassLoader {
         }
 
         String classPath = className.replace('.', '/') + ".class";
-        Map<String, JarFile> jarFiles = MixinRegistry.getJars().getJarFiles();
+        Map<String, JarFile> jarFiles = MixinRegistry.getMixinJarRegister().getJarFiles();
 
         for (JarFile jar : jarFiles.values()) {
             try {

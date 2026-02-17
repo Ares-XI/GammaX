@@ -13,7 +13,7 @@ public class MixinStart {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             MixinRegistry.clearCache();
-            MixinRegistry.getJars().close();
+            MixinRegistry.getMixinJarRegister().close();
             MixinRegistry.getMixinClassLoader().clearCache();
         }));
     }

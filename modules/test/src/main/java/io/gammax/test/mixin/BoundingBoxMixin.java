@@ -54,7 +54,7 @@ public abstract class BoundingBoxMixin {
         System.out.println("Выполняю resize");
         BoundingBox box = resize(minX, minY, minZ, maxX, maxY, maxZ);
         System.out.println("Новый хитбокс: " + box);
-        System.out.println("вызываю метод testResize()");
+        System.out.println("Вызываю метод testResize()");
         testResize();
     }
 

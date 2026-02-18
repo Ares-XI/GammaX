@@ -1,8 +1,8 @@
 package io.gammax.internal.format;
 
 import io.gammax.api.Inject;
-import io.gammax.api.enums.Mode;
-import io.gammax.api.enums.Instruction;
+import io.gammax.api.util.Mode;
+import io.gammax.api.util.Instruction;
 import io.gammax.internal.MixinRegistry;
 import io.gammax.internal.util.DescriptorFormat;
 import io.gammax.internal.util.visitor.InjectMethodVisitor;

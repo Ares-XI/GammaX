@@ -1,4 +1,4 @@
-package io.gammax.api.enums;
+package io.gammax.api.util;
 
 public enum Instruction {
     HEAD,

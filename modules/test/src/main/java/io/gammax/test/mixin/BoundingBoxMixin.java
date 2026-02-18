@@ -4,8 +4,8 @@ import io.gammax.api.Inject;
 import io.gammax.api.Mixin;
 import io.gammax.api.Shadow;
 import io.gammax.api.Unique;
-import io.gammax.api.enums.Instruction;
-import io.gammax.api.enums.Mode;
+import io.gammax.api.util.Instruction;
+import io.gammax.api.util.Mode;
 import org.bukkit.util.BoundingBox;
 import org.jetbrains.annotations.NotNull;
 

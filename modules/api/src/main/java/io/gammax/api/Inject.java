@@ -1,6 +1,6 @@
 package io.gammax.api;
 
-import io.gammax.api.enums.InjectAt;
+import io.gammax.api.enums.Instruction;
 import io.gammax.api.util.Signature;
 import io.gammax.api.enums.Mode;
 
@@ -14,17 +14,11 @@ import java.lang.annotation.Target;
 public @interface Inject {
     String method();
 
-    At at();
+    Instruction instruction();
+
+    Mode mode();
 
     Signature signature() default @Signature;
 
-    @Target({})
-    @Retention(RetentionPolicy.RUNTIME)
-    @interface At {
-        InjectAt value();
-
-        Mode mode() default Mode.BEFORE;
-
-        int index() default 0;
-    }
+    int index() default 0;
 }

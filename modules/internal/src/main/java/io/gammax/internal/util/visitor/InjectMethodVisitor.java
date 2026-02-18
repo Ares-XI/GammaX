@@ -1,9 +1,6 @@
 package io.gammax.internal.util.visitor;
 
-import org.objectweb.asm.Handle;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
 import java.lang.reflect.Method;
@@ -50,9 +47,7 @@ public class InjectMethodVisitor extends MethodVisitor {
     @Override
     public void visitTypeInsn(int opcode, String type) {
         String mixinName = method.getDeclaringClass().getName().replace('.', '/');
-        if (type.equals(mixinName)) {
-            type = targetClass.getName().replace('.', '/');
-        }
+        if (type.equals(mixinName)) type = targetClass.getName().replace('.', '/');
         insnList.add(new TypeInsnNode(opcode, type));
     }
 
@@ -62,31 +57,20 @@ public class InjectMethodVisitor extends MethodVisitor {
         String newOwner = fieldMap.get(key);
         String mixinName = method.getDeclaringClass().getName().replace('.', '/');
 
-        if (newOwner != null) {
-            insnList.add(new FieldInsnNode(opcode, newOwner, name, desc));
-        } else if (owner.equals(mixinName)) {
-            insnList.add(new FieldInsnNode(opcode,
-                    targetClass.getName().replace('.', '/'), name, desc));
-        } else {
-            insnList.add(new FieldInsnNode(opcode, owner, name, desc));
-        }
+        if (newOwner != null) insnList.add(new FieldInsnNode(opcode, newOwner, name, desc));
+        else if (owner.equals(mixinName)) insnList.add(new FieldInsnNode(opcode,targetClass.getName().replace('.', '/'), name, desc));
+        else insnList.add(new FieldInsnNode(opcode, owner, name, desc));
     }
 
     @Override
-    public void visitMethodInsn(int opcode, String owner, String name,
-                                String desc, boolean itf) {
+    public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
         String key = name + ":" + desc;
         String newOwner = methodMap.get(key);
         String mixinName = method.getDeclaringClass().getName().replace('.', '/');
 
-        if (newOwner != null) {
-            insnList.add(new MethodInsnNode(opcode, newOwner, name, desc, itf));
-        } else if (owner.equals(mixinName)) {
-            insnList.add(new MethodInsnNode(opcode,
-                    targetClass.getName().replace('.', '/'), name, desc, itf));
-        } else {
-            insnList.add(new MethodInsnNode(opcode, owner, name, desc, itf));
-        }
+        if (newOwner != null) insnList.add(new MethodInsnNode(opcode, newOwner, name, desc, itf));
+        else if (owner.equals(mixinName)) insnList.add(new MethodInsnNode(opcode, targetClass.getName().replace('.', '/'), name, desc, itf));
+        else insnList.add(new MethodInsnNode(opcode, owner, name, desc, itf));
     }
 
     @Override
@@ -106,6 +90,10 @@ public class InjectMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitLdcInsn(Object value) {
+        if (value instanceof Type t) {
+            String mixinName = method.getDeclaringClass().getName().replace('.', '/');
+            if (t.getInternalName().equals(mixinName)) value = Type.getObjectType(targetClass.getName().replace('.', '/'));
+        }
         insnList.add(new LdcInsnNode(value));
     }
 
@@ -118,9 +106,9 @@ public class InjectMethodVisitor extends MethodVisitor {
     public void visitTableSwitchInsn(int min, int max, Label dflt, Label... labels) {
         LabelNode dfltNode = new LabelNode(dflt);
         LabelNode[] labelNodes = new LabelNode[labels.length];
-        for (int i = 0; i < labels.length; i++) {
-            labelNodes[i] = new LabelNode(labels[i]);
-        }
+
+        for (int i = 0; i < labels.length; i++) labelNodes[i] = new LabelNode(labels[i]);
+
         insnList.add(new TableSwitchInsnNode(min, max, dfltNode, labelNodes));
     }
 
@@ -128,19 +116,23 @@ public class InjectMethodVisitor extends MethodVisitor {
     public void visitLookupSwitchInsn(Label dflt, int[] keys, Label[] labels) {
         LabelNode dfltNode = new LabelNode(dflt);
         LabelNode[] labelNodes = new LabelNode[labels.length];
-        for (int i = 0; i < labels.length; i++) {
-            labelNodes[i] = new LabelNode(labels[i]);
-        }
+
+        for (int i = 0; i < labels.length; i++) labelNodes[i] = new LabelNode(labels[i]);
+
         insnList.add(new LookupSwitchInsnNode(dfltNode, keys, labelNodes));
     }
 
     @Override
     public void visitMultiANewArrayInsn(String desc, int dims) {
+        String mixinName = method.getDeclaringClass().getName().replace('.', '/');
+        if (desc.contains(mixinName)) desc = desc.replace(mixinName, targetClass.getName().replace('.', '/'));
         insnList.add(new MultiANewArrayInsnNode(desc, dims));
     }
 
     @Override
     public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
+        String mixinName = method.getDeclaringClass().getName().replace('.', '/');
+        if (type != null && type.equals(mixinName)) type = targetClass.getName().replace('.', '/');
         tryCatchBlocks.add(new TryCatchBlockNode(
                 new LabelNode(start),
                 new LabelNode(end),
@@ -155,8 +147,7 @@ public class InjectMethodVisitor extends MethodVisitor {
     }
 
     @Override
-    public void visitLocalVariable(String name, String desc, String signature,
-                                   Label start, Label end, int index) {
+    public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) {
         localVariables.add(new LocalVariableNode(
                 name, desc, signature,
                 new LabelNode(start),

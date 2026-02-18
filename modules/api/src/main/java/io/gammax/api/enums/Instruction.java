@@ -1,6 +1,6 @@
 package io.gammax.api.enums;
 
-public enum InjectAt {
+public enum Instruction {
     HEAD,
     RETURN,
     TAIL,
@@ -30,8 +30,6 @@ public enum InjectAt {
     TABLE_SWITCH,
 
     THROW,
-    CATCH,
-    FINALLY,
 
     CONSTANT,
     CONSTANT_INT,
@@ -76,7 +74,5 @@ public enum InjectAt {
     D2I, D2L, D2F,
     I2B, I2C, I2S,
 
-    EARLY_RETURN,
-    CONTINUE,
-    BREAK
+    EARLY_RETURN
 }

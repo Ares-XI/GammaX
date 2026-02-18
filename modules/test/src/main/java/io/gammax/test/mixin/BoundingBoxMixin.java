@@ -4,7 +4,7 @@ import io.gammax.api.Inject;
 import io.gammax.api.Mixin;
 import io.gammax.api.Shadow;
 import io.gammax.api.Unique;
-import io.gammax.api.enums.InjectAt;
+import io.gammax.api.enums.Instruction;
 import io.gammax.api.enums.Mode;
 import org.bukkit.util.BoundingBox;
 import org.jetbrains.annotations.NotNull;
@@ -36,7 +36,7 @@ public abstract class BoundingBoxMixin {
     @Unique
     private double modifier;
 
-    @Inject(method = "<init>", at = @Inject.At(value = InjectAt.RETURN, mode = Mode.CANSEL))
+    @Inject(method = "<init>", instruction = Instruction.RETURN, mode = Mode.CANSEL)
     private void init() {
         System.out.println();
         System.out.println("Создан экземпляр значение modifier на: 2");

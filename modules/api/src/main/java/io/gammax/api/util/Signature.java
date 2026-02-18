@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 @Target({})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Signature {
-    Class<?>[] params() default {};
+    Class<?>[] parameters() default {};
     Class<?> result() default void.class;
 }

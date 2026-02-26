@@ -1,5 +1,6 @@
 package io.gammax.internal.util;
 
+import io.gammax.api.util.Signature;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
@@ -39,6 +40,10 @@ public class DescriptorFormat {
         if (Modifier.isStrict(modifiers)) access |= Opcodes.ACC_STRICT;
 
         return access;
+    }
+
+    public static String getMethodDescriptor(Signature signature) {
+        return getMethodDescriptor(signature.parameters(), signature.result());
     }
 
     public static String getMethodDescriptor(Method method) {

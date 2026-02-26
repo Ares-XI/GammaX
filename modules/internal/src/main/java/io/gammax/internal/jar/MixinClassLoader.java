@@ -2,8 +2,10 @@ package io.gammax.internal.jar;
 
 import io.gammax.internal.MixinRegistry;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLClassLoader;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
@@ -20,9 +22,7 @@ public class MixinClassLoader extends ClassLoader {
         }
 
         byte[] bytes = getClassBytes(name);
-        if (bytes == null) {
-            throw new ClassNotFoundException(name);
-        }
+        if (bytes == null) throw new ClassNotFoundException(name);
 
         byteCache.put(name, bytes);
         Class<?> clazz = defineClass(name, bytes, 0, bytes.length);
@@ -31,9 +31,7 @@ public class MixinClassLoader extends ClassLoader {
     }
 
     public byte[] getClassBytes(String className) {
-        if (byteCache.containsKey(className)) {
-            return byteCache.get(className);
-        }
+        if (byteCache.containsKey(className)) return byteCache.get(className);
 
         String classPath = className.replace('.', '/') + ".class";
         Map<String, JarFile> jarFiles = MixinRegistry.getMixinJarRegister().getJarFiles();
@@ -47,9 +45,7 @@ public class MixinClassLoader extends ClassLoader {
                         byte[] data = new byte[4096];
                         int bytesRead;
 
-                        while ((bytesRead = is.read(data, 0, data.length)) != -1) {
-                            buffer.write(data, 0, bytesRead);
-                        }
+                        while ((bytesRead = is.read(data, 0, data.length)) != -1) buffer.write(data, 0, bytesRead);
 
                         return buffer.toByteArray();
                     }

@@ -1,51 +1,69 @@
 package io.gammax.internal.format;
 
+import io.gammax.api.Argument;
 import io.gammax.api.Inject;
 import io.gammax.api.util.Mode;
-import io.gammax.api.util.Instruction;
+import io.gammax.api.util.TargetReference;
+import io.gammax.api.util.At;
 import io.gammax.internal.MixinRegistry;
+import io.gammax.internal.format.data.ArgumentParameter;
+import io.gammax.internal.format.data.LocalParameter;
+import io.gammax.internal.format.data.ShadowField;
+import io.gammax.internal.format.data.ShadowMethod;
 import io.gammax.internal.util.DescriptorFormat;
+import io.gammax.internal.util.TargetData;
 import io.gammax.internal.util.visitor.InjectMethodVisitor;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.util.*;
 
 public class InjectMethod {
     private final Method method;
     private final Class<?> targetClass;
+
+    private final ArgumentParameter[] argumentParameters;
+    private final LocalParameter[] localParameters = null;
+
     private final String targetMethodName;
-    private final Instruction instruction;
+    private final At at;
+    private final TargetReference target;
     private final Mode mode;
     private final int index;
     private final InjectMethodVisitor visitor;
+    private final TargetData targetData;
 
     private final Map<String, String> fieldMap = new HashMap<>();
     private final Map<String, String> methodMap = new HashMap<>();
     private final Class<?>[] parameters;
     private final Class<?> result;
 
-    public InjectMethod(Method method, Class<?> targetClass, ShadowField[] shadowFields, UniqueField[] uniqueFields, ShadowMethod[] shadowMethods, UniqueMethod[] uniqueMethods) {
+    public InjectMethod(Method method, Class<?> targetClass, ShadowField[] shadowFields, UniqueField[] uniqueFields, ShadowMethod[] shadowMethods, UniqueMethod[] uniqueMethods, ArgumentParameter[] argumentParameters) {
         this.method = method;
         this.targetClass = targetClass;
-        Inject annotation = method.getAnnotation(Inject.class);
 
+        this.argumentParameters = argumentParameters;
+//        this.localParameters = localParameters;
+
+        Inject annotation = method.getAnnotation(Inject.class);
         this.targetMethodName = annotation.method();
-        this.instruction = annotation.instruction();
+        this.at = annotation.at();
+        this.target = annotation.reference();
         this.mode = annotation.mode();
         this.index = annotation.index();
         this.parameters = annotation.signature().parameters();
         this.result = annotation.signature().result();
 
+        this.targetData = new TargetData(target, at);
         this.visitor = new InjectMethodVisitor(method, targetClass);
-
-        visitor.fieldMap.putAll(this.fieldMap);
-        visitor.methodMap.putAll(this.methodMap);
 
         buildFieldMap(shadowFields, uniqueFields);
         buildMethodMap(shadowMethods, uniqueMethods);
+
+        if (mode == Mode.CANSEL) validateCancellableReturnType();
 
         extractMethodInstructions();
     }
@@ -54,7 +72,7 @@ public class InjectMethod {
         String targetName = targetClass.getName().replace('.', '/');
 
         for (ShadowField sf : shadowFields) {
-            String key = sf.getField().getName() + ":" + DescriptorFormat.getDescriptor(sf.getField().getType());
+            String key = sf.field().getName() + ":" + DescriptorFormat.getDescriptor(sf.field().getType());
             fieldMap.put(key, targetName);
         }
         for (UniqueField uf : uniqueFields) {
@@ -68,7 +86,7 @@ public class InjectMethod {
         String targetName = targetClass.getName().replace('.', '/');
 
         for (ShadowMethod sm : shadowMethods) {
-            String key = sm.getMethod().getName() + ":" + DescriptorFormat.getMethodDescriptor(sm.getMethod());
+            String key = sm.method().getName() + ":" + DescriptorFormat.getMethodDescriptor(sm.method());
             methodMap.put(key, targetName);
         }
         for (UniqueMethod um : uniqueMethods) {
@@ -76,6 +94,25 @@ public class InjectMethod {
             methodMap.put(key, targetName);
         }
         visitor.methodMap.putAll(methodMap);
+    }
+
+    private void validateCancellableReturnType() {
+        Class<?> requiredType = getRequiredReturnTypeForCancellable();
+        if (method.getReturnType() != requiredType) {
+            new IllegalArgumentException("CANSEL injector for " + at + " must return " + requiredType.getName() + ", but returns " + method.getReturnType().getName()
+            ).printStackTrace(System.err);
+        }
+    }
+
+    private Class<?> getRequiredReturnTypeForCancellable() {
+        return switch (at) {
+            case HEAD, TAIL, JUMP, GOTO, LOAD, STORE, MONITOR_ENTER, MONITOR_EXIT, THROW, ARRAY_STORE -> void.class;
+            case RETURN -> result;
+            case INVOKE, INVOKE_ASSIGN, INVOKE_STRING, INVOKE_DYNAMIC, FIELD -> target.signature().result();
+            case NEW, NEW_ARRAY, ANEW_ARRAY, MULTI_NEW_ARRAY, CHECKCAST, INSTANCEOF -> target.owner() != void.class ? target.owner() : Object.class;
+            case CONSTANT, ARRAY_LOAD -> target.signature().result() != void.class ? target.signature().result() : Object.class;
+            case ARRAY_LENGTH -> int.class;
+        };
     }
 
     private void extractMethodInstructions() {
@@ -103,11 +140,21 @@ public class InjectMethod {
 
         if (!Modifier.isStatic(method.getModifiers())) injectCode.add(new VarInsnNode(Opcodes.ALOAD, 0));
 
-        int localIndex = Modifier.isStatic(method.getModifiers()) ? 0 : 1;
-        for (int i = 0; i < parameters.length; i++) {
-            Class<?> paramType = parameters[i];
-            int loadOpcode = DescriptorFormat.getLoadOpcode(paramType);
-            injectCode.add(new VarInsnNode(loadOpcode, DescriptorFormat.getParamIndex(targetMethod, i, localIndex)));
+        Type[] targetArgTypes = Type.getArgumentTypes(targetMethod.desc);
+
+        for (ArgumentParameter argParam : argumentParameters) {
+            Parameter param = argParam.parameter();
+            int argIndex = param.getAnnotation(Argument.class).value();
+            Class<?> paramType = param.getType();
+
+            if (argIndex >= 0 && argIndex < targetArgTypes.length) {
+                int loadOpcode = DescriptorFormat.getLoadOpcode(paramType);
+                int varIndex = getArgumentVarIndex(targetMethod, argIndex);
+                injectCode.add(new VarInsnNode(loadOpcode, varIndex));
+            } else {
+                System.err.println("[Inject] Warning: @Argument index " + argIndex + " out of bounds for method " + targetMethod.name);
+                injectCode.add(getDefaultValueInsn(paramType));
+            }
         }
 
         Map<LabelNode, LabelNode> labelMap = new HashMap<>();
@@ -129,6 +176,17 @@ public class InjectMethod {
                 }
             }
             injectCode.add(insn.clone(labelMap));
+        }
+
+        if (mode == Mode.CANSEL && requiresReturnValue(at)) {
+            AbstractInsnNode last = injectCode.getLast();
+            int expectedReturnOpcode = getReturnOpcodeForType(getRequiredReturnTypeForCancellable());
+            if (last == null || last.getOpcode() != expectedReturnOpcode) {
+                new IllegalStateException(
+                        "CANSEL injector for " + at + " must end with " +
+                                opcodeToString(expectedReturnOpcode) + " instruction"
+                ).printStackTrace(System.err);
+            }
         }
 
         switch (mode) {
@@ -154,148 +212,169 @@ public class InjectMethod {
         targetMethod.maxStack = Math.max(targetMethod.maxStack, visitor.maxStack + 2);
     }
 
+    private boolean requiresReturnValue(At at) {
+        return switch (at) {
+            case HEAD, TAIL, JUMP, GOTO, LOAD, STORE, MONITOR_ENTER, MONITOR_EXIT, THROW, ARRAY_STORE ->
+                    false;
+            case RETURN, INVOKE, INVOKE_ASSIGN, INVOKE_STRING, INVOKE_DYNAMIC,
+                 FIELD, NEW, NEW_ARRAY, ANEW_ARRAY, MULTI_NEW_ARRAY, CHECKCAST, INSTANCEOF,
+                 CONSTANT, ARRAY_LENGTH, ARRAY_LOAD ->
+                    true;
+        };
+    }
+
+    private int getReturnOpcodeForType(Class<?> type) {
+        if (type == void.class) return -1;
+        if (type == int.class || type == boolean.class || type == byte.class || type == char.class || type == short.class) return Opcodes.IRETURN;
+        if (type == long.class) return Opcodes.LRETURN;
+        if (type == float.class) return Opcodes.FRETURN;
+        if (type == double.class) return Opcodes.DRETURN;
+        return Opcodes.ARETURN;
+    }
+
+    private String opcodeToString(int opcode) {
+        return switch (opcode) {
+            case Opcodes.IRETURN -> "IRETURN";
+            case Opcodes.LRETURN -> "LRETURN";
+            case Opcodes.FRETURN -> "FRETURN";
+            case Opcodes.DRETURN -> "DRETURN";
+            case Opcodes.ARETURN -> "ARETURN";
+            case Opcodes.RETURN -> "RETURN";
+            default -> "UNKNOWN";
+        };
+    }
+
     private AbstractInsnNode findInjectionPoint(MethodNode method) {
-        int currentIndex = 0;
+        if (at == At.HEAD) return method.instructions.getFirst();
+
+        if (at == At.TAIL) {
+            int found = 0;
+            AbstractInsnNode lastReturn = null;
+
+            for (AbstractInsnNode insn : method.instructions) {
+                if (insn.getOpcode() >= Opcodes.IRETURN && insn.getOpcode() <= Opcodes.RETURN) {
+                    if (found == index) return insn;
+                    lastReturn = insn;
+                    found++;
+                }
+            }
+
+            if (found > 0) {
+                System.err.println("[Inject] Warning: Index " + index + " too large for TAIL, using last RETURN");
+                return lastReturn;
+            }
+
+            return null;
+        }
+
+        int found = 0;
+        AbstractInsnNode lastMatch = null;
 
         for (AbstractInsnNode insn : method.instructions) {
             if (matches(insn)) {
-                if (currentIndex == index) return insn;
-                currentIndex++;
+                if (found == index) return insn;
+                lastMatch = insn;
+                found++;
             }
         }
 
-        if (instruction == Instruction.HEAD) return method.instructions.getFirst();
+        if (found == 0) {
+            System.err.println("[Inject] Warning: No matching instruction found for " + at + " in " + targetMethodName);
+            return null;
+        }
 
-        if (instruction == Instruction.TAIL) {
-            for (AbstractInsnNode insn : method.instructions) {
-                if (insn.getOpcode() >= Opcodes.IRETURN && insn.getOpcode() <= Opcodes.RETURN) return insn;
-            }
+        if (index >= found) {
+            System.err.println("[Inject] Warning: Index " + index + " too large for " + at + " in " + targetMethodName + " (max: " + (found-1) + "), using last match");
+            return lastMatch;
         }
 
         return null;
     }
 
     private boolean matches(AbstractInsnNode insn) {
+        if (insn.getType() == AbstractInsnNode.LABEL || insn.getType() == AbstractInsnNode.LINE || insn.getType() == AbstractInsnNode.FRAME) return false;
+
         int opcode = insn.getOpcode();
-
-        if (opcode == -1) return false;
-
-        return switch (instruction) {
+        boolean typeMatches = switch (at) {
+            case HEAD -> false;
             case RETURN -> opcode >= Opcodes.IRETURN && opcode <= Opcodes.RETURN;
+            case TAIL -> false;
 
-            case INVOKE -> insn instanceof MethodInsnNode;
-            case INVOKE_ASSIGN -> insn instanceof MethodInsnNode && isInvokeAssign(insn);
-            case INVOKE_STRING -> insn instanceof MethodInsnNode && isInvokeString(insn);
-            case INVOKE_DYNAMIC -> insn instanceof InvokeDynamicInsnNode;
+            case INVOKE, INVOKE_ASSIGN, INVOKE_STRING, INVOKE_DYNAMIC ->
+                    insn instanceof MethodInsnNode;
+            case NEW, NEW_ARRAY, ANEW_ARRAY, MULTI_NEW_ARRAY, CHECKCAST, INSTANCEOF ->
+                    insn instanceof TypeInsnNode;
+            case FIELD ->
+                    insn instanceof FieldInsnNode;
+            case ARRAY_LENGTH ->
+                    opcode == Opcodes.ARRAYLENGTH;
+            case ARRAY_LOAD ->
+                    opcode >= Opcodes.IALOAD && opcode <= Opcodes.SALOAD;
+            case ARRAY_STORE ->
+                    opcode >= Opcodes.IASTORE && opcode <= Opcodes.SASTORE;
+            case LOAD ->
+                    opcode >= Opcodes.ILOAD && opcode <= Opcodes.ALOAD;
+            case STORE ->
+                    opcode >= Opcodes.ISTORE && opcode <= Opcodes.ASTORE;
+            case JUMP ->
+                    opcode >= Opcodes.IFEQ && opcode <= Opcodes.IF_ACMPNE;
+            case GOTO ->
+                    opcode == Opcodes.GOTO;
+            case CONSTANT ->
+                    insn instanceof LdcInsnNode;
+            case MONITOR_ENTER ->
+                    opcode == Opcodes.MONITORENTER;
+            case MONITOR_EXIT ->
+                    opcode == Opcodes.MONITOREXIT;
+            case THROW ->
+                    opcode == Opcodes.ATHROW;
+        };
 
-            case NEW -> opcode == Opcodes.NEW;
-            case NEW_ARRAY -> opcode == Opcodes.NEWARRAY;
-            case ANEW_ARRAY -> opcode == Opcodes.ANEWARRAY;
-            case MULTI_NEW_ARRAY -> opcode == Opcodes.MULTIANEWARRAY;
-
-            case GET_FIELD -> opcode == Opcodes.GETFIELD;
-            case PUT_FIELD -> opcode == Opcodes.PUTFIELD;
-            case GET_STATIC -> opcode == Opcodes.GETSTATIC;
-            case PUT_STATIC -> opcode == Opcodes.PUTSTATIC;
-
-            case LOAD -> opcode >= Opcodes.ILOAD && opcode <= Opcodes.ALOAD;
-            case STORE -> opcode >= Opcodes.ISTORE && opcode <= Opcodes.ASTORE;
-            case IINC -> opcode == Opcodes.IINC;
-
-            case JUMP -> opcode >= Opcodes.IFEQ && opcode <= Opcodes.IF_ACMPNE;
-            case GOTO -> opcode == Opcodes.GOTO;
-            case LOOKUP_SWITCH -> opcode == Opcodes.LOOKUPSWITCH;
-            case TABLE_SWITCH -> opcode == Opcodes.TABLESWITCH;
-
-            case THROW -> opcode == Opcodes.ATHROW;
-
-            case CONSTANT -> insn instanceof LdcInsnNode;
-            case CONSTANT_INT -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Integer;
-            case CONSTANT_LONG -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Long;
-            case CONSTANT_FLOAT -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Float;
-            case CONSTANT_DOUBLE -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Double;
-            case CONSTANT_STRING -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof String;
-            case CONSTANT_CLASS -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst instanceof Type;
-
-            case MONITOR_ENTER -> opcode == Opcodes.MONITORENTER;
-            case MONITOR_EXIT -> opcode == Opcodes.MONITOREXIT;
-
-            case CHECKCAST -> opcode == Opcodes.CHECKCAST;
-            case INSTANCEOF -> opcode == Opcodes.INSTANCEOF;
-
-            case ARRAY_LENGTH -> opcode == Opcodes.ARRAYLENGTH;
-            case ARRAY_LOAD -> opcode >= Opcodes.IALOAD && opcode <= Opcodes.SALOAD;
-            case ARRAY_STORE -> opcode >= Opcodes.IASTORE && opcode <= Opcodes.SASTORE;
-
-            case ADD -> isArithmeticOp(opcode, Opcodes.IADD, Opcodes.LADD, Opcodes.FADD, Opcodes.DADD);
-            case SUB -> isArithmeticOp(opcode, Opcodes.ISUB, Opcodes.LSUB, Opcodes.FSUB, Opcodes.DSUB);
-            case MUL -> isArithmeticOp(opcode, Opcodes.IMUL, Opcodes.LMUL, Opcodes.FMUL, Opcodes.DMUL);
-            case DIV -> isArithmeticOp(opcode, Opcodes.IDIV, Opcodes.LDIV, Opcodes.FDIV, Opcodes.DDIV);
-            case REM -> isArithmeticOp(opcode, Opcodes.IREM, Opcodes.LREM, Opcodes.FREM, Opcodes.DREM);
-            case NEG -> isArithmeticOp(opcode, Opcodes.INEG, Opcodes.LNEG, Opcodes.FNEG, Opcodes.DNEG);
-
-            case SHL -> isArithmeticOp(opcode, Opcodes.ISHL, Opcodes.LSHL);
-            case SHR -> isArithmeticOp(opcode, Opcodes.ISHR, Opcodes.LSHR);
-            case USHR -> isArithmeticOp(opcode, Opcodes.IUSHR, Opcodes.LUSHR);
-            case AND -> isArithmeticOp(opcode, Opcodes.IAND, Opcodes.LAND);
-            case OR -> isArithmeticOp(opcode, Opcodes.IOR, Opcodes.LOR);
-            case XOR -> isArithmeticOp(opcode, Opcodes.IXOR, Opcodes.LXOR);
-
-            case LCMP -> opcode == Opcodes.LCMP;
-            case FCMPL -> opcode == Opcodes.FCMPL;
-            case FCMPG -> opcode == Opcodes.FCMPG;
-            case DCMPL -> opcode == Opcodes.DCMPL;
-            case DCMPG -> opcode == Opcodes.DCMPG;
-
-            case I2L -> opcode == Opcodes.I2L;
-            case I2F -> opcode == Opcodes.I2F;
-            case I2D -> opcode == Opcodes.I2D;
-            case L2I -> opcode == Opcodes.L2I;
-            case L2F -> opcode == Opcodes.L2F;
-            case L2D -> opcode == Opcodes.L2D;
-            case F2I -> opcode == Opcodes.F2I;
-            case F2L -> opcode == Opcodes.F2L;
-            case F2D -> opcode == Opcodes.F2D;
-            case D2I -> opcode == Opcodes.D2I;
-            case D2L -> opcode == Opcodes.D2L;
-            case D2F -> opcode == Opcodes.D2F;
-            case I2B -> opcode == Opcodes.I2B;
-            case I2C -> opcode == Opcodes.I2C;
-            case I2S -> opcode == Opcodes.I2S;
-            case EARLY_RETURN -> opcode == Opcodes.RETURN && isEarlyReturn(insn);
-
-            default -> false;
+        if (!typeMatches) return false;
+        if (at == At.INVOKE_ASSIGN && !isInvokeAssign(insn)) return false;
+        if (at == At.INVOKE_STRING && !isInvokeString(insn)) return false;
+        return switch (at) {
+            case INVOKE, INVOKE_ASSIGN, INVOKE_STRING, INVOKE_DYNAMIC,
+                 FIELD, NEW, CHECKCAST, INSTANCEOF, LOAD, STORE ->
+                    targetData.matches(insn);
+            default -> true;
         };
     }
 
-    private boolean isArithmeticOp(int opcode, int... validOpcodes) {
-        for (int valid : validOpcodes) if (opcode == valid) return true;
-        return false;
+    private int getArgumentVarIndex(MethodNode method, int argIndex) {
+        int baseIndex = Modifier.isStatic(method.access) ? 0 : 1;
+        Type[] argTypes = Type.getArgumentTypes(method.desc);
+        int index = baseIndex;
+
+        for (int i = 0; i < argIndex; i++) {
+            index += argTypes[i].getSize();
+        }
+        return index;
+    }
+
+    private AbstractInsnNode getDefaultValueInsn(Class<?> type) {
+        if (type == int.class || type == boolean.class || type == byte.class ||
+                type == char.class || type == short.class) {
+            return new InsnNode(Opcodes.ICONST_0);
+        }
+        if (type == long.class) return new InsnNode(Opcodes.LCONST_0);
+        if (type == float.class) return new InsnNode(Opcodes.FCONST_0);
+        if (type == double.class) return new InsnNode(Opcodes.DCONST_0);
+        return new InsnNode(Opcodes.ACONST_NULL);
     }
 
     private boolean isInvokeAssign(AbstractInsnNode insn) {
         AbstractInsnNode next = insn.getNext();
         if (next == null) return false;
-
         int nextOp = next.getOpcode();
         return nextOp >= Opcodes.ISTORE && nextOp <= Opcodes.ASTORE;
     }
 
     private boolean isInvokeString(AbstractInsnNode insn) {
         if (!(insn instanceof MethodInsnNode)) return false;
-
         AbstractInsnNode prev = insn.getPrevious();
         if (prev == null) return false;
-
-        if (prev.getOpcode() == Opcodes.LDC && prev instanceof LdcInsnNode) {
-            Object cst = ((LdcInsnNode) prev).cst;
-            return cst instanceof String;
-        }
-        return false;
-    }
-
-    private boolean isEarlyReturn(AbstractInsnNode insn) {
-        return insn.getNext() != null && insn.getNext().getOpcode() != -1;
+        return prev.getOpcode() == Opcodes.LDC && prev instanceof LdcInsnNode && ((LdcInsnNode) prev).cst instanceof String;
     }
 
     private TryCatchBlockNode cloneTryCatch(TryCatchBlockNode original, MethodNode method) {
@@ -329,7 +408,10 @@ public class InjectMethod {
             }
         }
 
-        if (!injected) return targetClassBytes;
+        if (!injected) {
+            System.err.println("[Inject] Warning: Target method " + targetMethodName + " not found in " + targetClass.getName());
+            return targetClassBytes;
+        }
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
         classNode.accept(writer);

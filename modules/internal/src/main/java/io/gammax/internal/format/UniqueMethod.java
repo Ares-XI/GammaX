@@ -1,6 +1,8 @@
 package io.gammax.internal.format;
 
 import io.gammax.internal.MixinRegistry;
+import io.gammax.internal.format.data.ShadowField;
+import io.gammax.internal.format.data.ShadowMethod;
 import io.gammax.internal.util.DescriptorFormat;
 import io.gammax.internal.util.visitor.UniqueMethodVisitor;
 import org.objectweb.asm.*;
@@ -40,7 +42,7 @@ public class UniqueMethod {
 
     private void buildFieldMap(ShadowField[] shadowFields, UniqueField[] uniqueFields) {
         for (ShadowField sf : shadowFields) {
-            String key = sf.getField().getName() + ":" + DescriptorFormat.getDescriptor(sf.getField().getType());
+            String key = sf.field().getName() + ":" + DescriptorFormat.getDescriptor(sf.field().getType());
             visitor.fieldMap.put(key, targetClass.getName().replace('.', '/'));
         }
         for (UniqueField uf : uniqueFields) {
@@ -51,7 +53,7 @@ public class UniqueMethod {
 
     private void buildMethodMap(ShadowMethod[] shadowMethods, UniqueMethod[] uniqueMethods) {
         for (ShadowMethod sm : shadowMethods) {
-            String key = sm.getMethod().getName() + ":" + DescriptorFormat.getMethodDescriptor(sm.getMethod());
+            String key = sm.method().getName() + ":" + DescriptorFormat.getMethodDescriptor(sm.method());
             visitor.methodMap.put(key, targetClass.getName().replace('.', '/'));
         }
         for (UniqueMethod um: uniqueMethods) {

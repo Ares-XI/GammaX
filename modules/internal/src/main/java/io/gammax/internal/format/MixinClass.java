@@ -1,8 +1,9 @@
 package io.gammax.internal.format;
 
-import io.gammax.api.Inject;
 import io.gammax.api.Mixin;
 import io.gammax.internal.MixinRegistry;
+import io.gammax.internal.format.data.ShadowField;
+import io.gammax.internal.format.data.ShadowMethod;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Modifier;
@@ -24,13 +25,16 @@ public class MixinClass {
 
     private final boolean isValid;
 
+    private final Class<?>[] interfaces;
+
     public MixinClass(
             @NotNull Class<?> clazz,
             @NotNull ShadowField[] shadowFields,
             @NotNull UniqueField[] uniqueFields,
             @NotNull ShadowMethod[] shadowMethods,
             @NotNull UniqueMethod[] uniqueMethods,
-            @NotNull InjectMethod[] injectMethods
+            @NotNull InjectMethod[] injectMethods,
+            Class<?>[] interfaces
     ) {
         boolean add = false;
 
@@ -40,12 +44,13 @@ public class MixinClass {
         else add = true;
 
         this.mixinClazz = clazz;
-        this.targetClass = clazz.getAnnotation(Mixin.class).target();
+        this.targetClass = clazz.getAnnotation(Mixin.class).value();
         this.shadowFields = shadowFields;
         this.uniqueFields = uniqueFields;
         this.shadowMethods = shadowMethods;
         this.uniqueMethods = uniqueMethods;
         this.injectMethods = injectMethods;
+        this.interfaces = interfaces;
 
         try {
             MixinRegistry.getMixinClassLoader().loadClass(mixinClazz.getName());
@@ -60,6 +65,10 @@ public class MixinClass {
 
     public Class<?> getMixinClass() {
         return mixinClazz;
+    }
+
+    public Class<?>[] getInterfaces() {
+        return interfaces;
     }
 
     public Class<?> getTargetClass() {

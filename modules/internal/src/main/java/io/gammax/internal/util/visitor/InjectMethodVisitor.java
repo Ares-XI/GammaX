@@ -11,10 +11,14 @@ public class InjectMethodVisitor extends MethodVisitor {
     private final Method method;
     private final Class<?> targetClass;
 
+    private final boolean isVoid;
+    private int lastOpcode = -1;
+
     public InsnList instructions;
     public final List<TryCatchBlockNode> tryCatchBlocks = new ArrayList<>();
     public final List<LocalVariableNode> localVariables = new ArrayList<>();
     public final List<LineNumberNode> lineNumbers = new ArrayList<>();
+
 
     public final Map<String, String> fieldMap = new HashMap<>();
     public final Map<String, String> methodMap = new HashMap<>();
@@ -27,10 +31,12 @@ public class InjectMethodVisitor extends MethodVisitor {
         super(Opcodes.ASM9);
         this.method = method;
         this.targetClass = targetClass;
+        this.isVoid = method.getReturnType() == void.class;
     }
 
     @Override
     public void visitInsn(int opcode) {
+        lastOpcode = opcode;
         insnList.add(new InsnNode(opcode));
     }
 
@@ -171,6 +177,9 @@ public class InjectMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitEnd() {
+        if (isVoid && lastOpcode == Opcodes.RETURN && insnList.size() > 0) {
+            insnList.remove(insnList.getLast());
+        }
         instructions = insnList;
     }
 }

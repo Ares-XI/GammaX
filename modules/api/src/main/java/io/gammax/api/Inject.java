@@ -1,8 +1,9 @@
 package io.gammax.api;
 
-import io.gammax.api.util.Instruction;
+import io.gammax.api.util.At;
 import io.gammax.api.util.Signature;
 import io.gammax.api.util.Mode;
+import io.gammax.api.util.TargetReference;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -14,11 +15,13 @@ import java.lang.annotation.Target;
 public @interface Inject {
     String method();
 
-    Instruction instruction();
-
-    Mode mode();
+    At at();
 
     Signature signature() default @Signature;
+
+    TargetReference reference() default @TargetReference;
+
+    Mode mode() default Mode.BEFORE;
 
     int index() default 0;
 }

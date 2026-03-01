@@ -78,26 +78,26 @@ public abstract class VectorMixin {
                     result = Vector.class
             )
     )
-    private void onMultiply(@Argument(0) double m) {
+    private void onMultiply(@Arg double m) {
         incrementCount("multiply(" + m + ")");
         System.out.println("[Inject HEAD] Multiplying by " + m);
     }
 
-    @Inject(
-            method = "length",
-            at = At.HEAD,
-            mode = Mode.CANSEL,
-            signature = @Signature(result = double.class)
-    )
-    private double onLength() {
-        double len = Math.sqrt(x*x + y*y + z*z);
-        if (len < EPSILON) {
-            System.out.println("[Inject RETURN] Zero-length detected, returning 0");
-            return 0.0;
-        }
-        System.out.println("[Inject RETURN] Length = " + len);
-        return len;
-    }
+//    @Inject(
+//            method = "length",
+//            at = At.HEAD,
+//            mode = Mode.CANSEL,
+//            signature = @Signature(result = double.class)
+//    )
+//    private double onLength() {
+//        double len = Math.sqrt(x*x + y*y + z*z);
+//        if (len < EPSILON) {
+//            System.out.println("[Inject RETURN] Zero-length detected, returning 0");
+//            return 0.0;
+//        }
+//        System.out.println("[Inject RETURN] Length = " + len);
+//        return len;
+//    }
 
     @Inject(
             method = "clone",
@@ -116,7 +116,7 @@ public abstract class VectorMixin {
                     result = Vector.class
             )
     )
-    private void onAdd(@Argument(0) Vector other) {
+    private void onAdd(@Arg Vector other) {
         incrementCount("add(" + other + ")");
         System.out.println("[Inject HEAD] Adding " + other);
     }

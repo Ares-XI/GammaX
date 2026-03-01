@@ -60,7 +60,14 @@ public class TestMixinCommand implements CommandExecutor {
         sender.sendMessage("§6=== Тест Vector (интерфейсы) ===");
 
         Vector vec = new Vector(1, 2, 3);
+
+        vec.multiply(2.0);
+        vec.add(new Vector(1, 1, 1));
+        vec.multiply(new Vector(1, 2, 3));
+
+        Vector vec2 = vec.clone();
         sender.sendMessage("§7Создан вектор: " + vec);
+        sender.sendMessage("создан ёщё один вектор: " + vec2);
 
         try {
             VectorAccess access = (VectorAccess) vec;

@@ -97,10 +97,10 @@ public class MixinRegistry {
                             List<Parameter> locals = new ArrayList<>();
 
                             for(Parameter arg: method.getParameters()) {
-                                if(arg.isAnnotationPresent(Argument.class) && arg.isAnnotationPresent(Local.class)) {
+                                if(arg.isAnnotationPresent(Arg.class) && arg.isAnnotationPresent(Local.class)) {
                                     new IllegalArgumentException("Inject parameter cannot be annotated by @Argument and @Local").printStackTrace(System.err);
                                 }
-                                if(arg.isAnnotationPresent(Argument.class)) args.add(arg);
+                                if(arg.isAnnotationPresent(Arg.class)) args.add(arg);
                                 if(arg.isAnnotationPresent(Local.class)) locals.add(arg);
                             }
 
@@ -147,8 +147,8 @@ public class MixinRegistry {
                                     uniqueFieldsList.toArray(new UniqueField[0]),
                                     shadowMethodsList.toArray(new ShadowMethod[0]),
                                     uniqueMethodsList.toArray(new UniqueMethod[0]),
-                                    args.toArray(new ArgumentParameter[0])
-//                                    ,locals.toArray(new LocalParameter[0])
+                                    args.toArray(new ArgumentParameter[0]),
+                                    locals.toArray(new LocalParameter[0])
                             ));
                         }
                     }
@@ -166,7 +166,6 @@ public class MixinRegistry {
                     if(mixinClass.isValid()) mixins.add(mixinClass);
 
                     System.out.println(mixinClass.isValid());
-
                     System.out.println(Arrays.toString(mixinClass.shadowFields));
                     System.out.println(Arrays.toString(mixinClass.uniqueFields));
                     System.out.println(Arrays.toString(mixinClass.shadowMethods));

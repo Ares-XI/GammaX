@@ -7,30 +7,27 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 public class InjectMethodVisitor extends MethodVisitor {
-
-    private final Method method;
-    private final Class<?> targetClass;
-
-    private final boolean isVoid;
-    private int lastOpcode = -1;
+    private final String targetName;
+    private final String mixinName;
+    private final Map<String, String> fieldMap;
+    private final Map<String, String> methodMap;
 
     public InsnList instructions;
     public final List<TryCatchBlockNode> tryCatchBlocks = new ArrayList<>();
     public final List<LocalVariableNode> localVariables = new ArrayList<>();
     public final List<LineNumberNode> lineNumbers = new ArrayList<>();
-
-
-    public final Map<String, String> fieldMap = new HashMap<>();
-    public final Map<String, String> methodMap = new HashMap<>();
     public final InsnList insnList = new InsnList();
-
     public int maxLocals;
     public int maxStack;
+    private int lastOpcode = -1;
+    private final boolean isVoid;
 
-    public InjectMethodVisitor(Method method, Class<?> targetClass) {
+    public InjectMethodVisitor(Method method, Class<?> targetClass, Map<String, String> fieldMap, Map<String, String> methodMap) {
         super(Opcodes.ASM9);
-        this.method = method;
-        this.targetClass = targetClass;
+        this.targetName = targetClass.getName().replace('.', '/');
+        this.mixinName = method.getDeclaringClass().getName().replace('.', '/');
+        this.fieldMap = fieldMap;
+        this.methodMap = methodMap;
         this.isVoid = method.getReturnType() == void.class;
     }
 
@@ -52,8 +49,7 @@ public class InjectMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypeInsn(int opcode, String type) {
-        String mixinName = method.getDeclaringClass().getName().replace('.', '/');
-        if (type.equals(mixinName)) type = targetClass.getName().replace('.', '/');
+        if (type.equals(mixinName)) type = targetName;
         insnList.add(new TypeInsnNode(opcode, type));
     }
 
@@ -61,10 +57,8 @@ public class InjectMethodVisitor extends MethodVisitor {
     public void visitFieldInsn(int opcode, String owner, String name, String desc) {
         String key = name + ":" + desc;
         String newOwner = fieldMap.get(key);
-        String mixinName = method.getDeclaringClass().getName().replace('.', '/');
-
         if (newOwner != null) insnList.add(new FieldInsnNode(opcode, newOwner, name, desc));
-        else if (owner.equals(mixinName)) insnList.add(new FieldInsnNode(opcode,targetClass.getName().replace('.', '/'), name, desc));
+        else if (owner.equals(mixinName)) insnList.add(new FieldInsnNode(opcode, targetName, name, desc));
         else insnList.add(new FieldInsnNode(opcode, owner, name, desc));
     }
 
@@ -72,10 +66,8 @@ public class InjectMethodVisitor extends MethodVisitor {
     public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
         String key = name + ":" + desc;
         String newOwner = methodMap.get(key);
-        String mixinName = method.getDeclaringClass().getName().replace('.', '/');
-
         if (newOwner != null) insnList.add(new MethodInsnNode(opcode, newOwner, name, desc, itf));
-        else if (owner.equals(mixinName)) insnList.add(new MethodInsnNode(opcode, targetClass.getName().replace('.', '/'), name, desc, itf));
+        else if (owner.equals(mixinName)) insnList.add(new MethodInsnNode(opcode, targetName, name, desc, itf));
         else insnList.add(new MethodInsnNode(opcode, owner, name, desc, itf));
     }
 
@@ -96,10 +88,7 @@ public class InjectMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitLdcInsn(Object value) {
-        if (value instanceof Type t) {
-            String mixinName = method.getDeclaringClass().getName().replace('.', '/');
-            if (t.getInternalName().equals(mixinName)) value = Type.getObjectType(targetClass.getName().replace('.', '/'));
-        }
+        if (value instanceof Type t && t.getInternalName().equals(mixinName)) value = Type.getObjectType(targetName);
         insnList.add(new LdcInsnNode(value));
     }
 
@@ -112,9 +101,7 @@ public class InjectMethodVisitor extends MethodVisitor {
     public void visitTableSwitchInsn(int min, int max, Label dflt, Label... labels) {
         LabelNode dfltNode = new LabelNode(dflt);
         LabelNode[] labelNodes = new LabelNode[labels.length];
-
         for (int i = 0; i < labels.length; i++) labelNodes[i] = new LabelNode(labels[i]);
-
         insnList.add(new TableSwitchInsnNode(min, max, dfltNode, labelNodes));
     }
 
@@ -122,23 +109,19 @@ public class InjectMethodVisitor extends MethodVisitor {
     public void visitLookupSwitchInsn(Label dflt, int[] keys, Label[] labels) {
         LabelNode dfltNode = new LabelNode(dflt);
         LabelNode[] labelNodes = new LabelNode[labels.length];
-
         for (int i = 0; i < labels.length; i++) labelNodes[i] = new LabelNode(labels[i]);
-
         insnList.add(new LookupSwitchInsnNode(dfltNode, keys, labelNodes));
     }
 
     @Override
     public void visitMultiANewArrayInsn(String desc, int dims) {
-        String mixinName = method.getDeclaringClass().getName().replace('.', '/');
-        if (desc.contains(mixinName)) desc = desc.replace(mixinName, targetClass.getName().replace('.', '/'));
+        if (desc.contains(mixinName)) desc = desc.replace(mixinName, targetName);
         insnList.add(new MultiANewArrayInsnNode(desc, dims));
     }
 
     @Override
     public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
-        String mixinName = method.getDeclaringClass().getName().replace('.', '/');
-        if (type != null && type.equals(mixinName)) type = targetClass.getName().replace('.', '/');
+        if (type != null && type.equals(mixinName)) type = targetName;
         tryCatchBlocks.add(new TryCatchBlockNode(
                 new LabelNode(start),
                 new LabelNode(end),
@@ -177,9 +160,7 @@ public class InjectMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitEnd() {
-        if (isVoid && lastOpcode == Opcodes.RETURN && insnList.size() > 0) {
-            insnList.remove(insnList.getLast());
-        }
+        if (isVoid && lastOpcode == Opcodes.RETURN && insnList.size() > 0) insnList.remove(insnList.getLast());
         instructions = insnList;
     }
 }

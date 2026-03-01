@@ -3,7 +3,6 @@ package io.gammax.test.mixins;
 import io.gammax.api.*;
 import io.gammax.api.util.At;
 import io.gammax.api.util.Signature;
-import io.gammax.test.access.BoundingBoxAccess;
 import org.bukkit.util.BoundingBox;
 
 @Mixin(BoundingBox.class)
@@ -87,7 +86,7 @@ public abstract class BoundingBoxMixin {
                     result = BoundingBox.class
             )
     )
-    private void onShift(@Argument(0) double x, @Argument(0) double y, @Argument(0) double z) {
+    private void onShift(@Arg double x, @Arg double y, @Arg double z) {
         System.out.println("[Inject HEAD] Shifting by (" + x + ", " + y + ", " + z + ")");
         System.out.println("[Inject HEAD] Current: " + getDimensions());
     }
@@ -116,7 +115,7 @@ public abstract class BoundingBoxMixin {
                     result = BoundingBox.class
             )
     )
-    private void onContains(@Argument(0) double x, @Argument(0) double y, @Argument(0) double z) {
+    private void onContains(@Arg double x, @Arg double y, @Arg double z) {
         checkCount++;
         System.out.println("[Inject HEAD] Contains check #" + checkCount + " for (" + x + ", " + y + ", " + z + ")");
     }

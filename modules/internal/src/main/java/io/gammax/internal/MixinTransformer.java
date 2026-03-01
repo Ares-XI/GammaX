@@ -11,6 +11,8 @@ import java.lang.instrument.ClassFileTransformer;
 import java.net.URLClassLoader;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 public class MixinTransformer implements ClassFileTransformer {
@@ -21,11 +23,11 @@ public class MixinTransformer implements ClassFileTransformer {
         unsupportedPaths.add("java/");
         unsupportedPaths.add("jdk/");
         unsupportedPaths.add("sun/");
-        unsupportedPaths.add("com/google/");
+        unsupportedPaths.add("com/google/gson/");
         unsupportedPaths.add("org/intellij/");
         unsupportedPaths.add("org/jetbrains/");
         unsupportedPaths.add("org/objectweb/asm/");
-        unsupportedPaths.add("io/gammax/internal/");
+        unsupportedPaths.add("io/gammax/");
     }
 
     @Override
@@ -38,12 +40,10 @@ public class MixinTransformer implements ClassFileTransformer {
         if(className == null) return null;
         for(String str: unsupportedPaths) if(className.startsWith(str)) return null;
 
-        byte[] bytecode = classFile;
-
         if(MixinRegistry.isTargetPath(className.replace("/", "."))) {
             for (MixinClass mixin : MixinRegistry.getCache()) {
                 if (mixin.getTargetClass().getName().replace('.', '/').equals(className)) {
-                    ClassReader reader = new ClassReader(bytecode);
+                    ClassReader reader = new ClassReader(classFile);
                     ClassNode classNode = new ClassNode();
 
                     reader.accept(classNode, ClassReader.EXPAND_FRAMES);
@@ -56,12 +56,17 @@ public class MixinTransformer implements ClassFileTransformer {
                     }
 
                     ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+                    List<InjectMethod> injectors = Arrays.asList(mixin.injectMethods);
 
+                    injectors.sort(Comparator.comparingInt(InjectMethod::getPriority));
                     classNode.accept(writer);
-                    bytecode = writer.toByteArray();
+
+                    byte[] bytecode = writer.toByteArray();
+
                     for (UniqueField uniqueField : mixin.uniqueFields) bytecode = uniqueField.addField(bytecode);
                     for (UniqueMethod uniqueMethod : mixin.uniqueMethods) bytecode = uniqueMethod.addMethod(bytecode);
-                    for (InjectMethod injectMethod : mixin.injectMethods) bytecode = injectMethod.inject(bytecode);
+                    for (InjectMethod injectMethod : injectors) bytecode = injectMethod.inject(bytecode);
+
                     return bytecode;
                 }
             }

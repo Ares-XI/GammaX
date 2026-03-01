@@ -24,4 +24,6 @@ public @interface Inject {
     Mode mode() default Mode.BEFORE;
 
     int index() default 0;
+
+    int priority() default 0;
 }

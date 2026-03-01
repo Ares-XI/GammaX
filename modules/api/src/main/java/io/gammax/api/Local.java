@@ -7,4 +7,6 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Local {}
+public @interface Local {
+    int value() default 0;
+}

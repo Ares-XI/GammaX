@@ -16,7 +16,6 @@ import org.objectweb.asm.tree.*;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Parameter;
 import java.util.*;
 
 public class InjectMethod {
@@ -72,18 +71,23 @@ public class InjectMethod {
     private void extractMethodInstructions() {
         try {
             byte[] mixinBytes = MixinRegistry.getMixinClassLoader().getClassBytes(method.getDeclaringClass().getName());
-            if (mixinBytes == null) return;
+            if (mixinBytes == null) {
+                System.out.println("[Inject] mixinBytes = null for " + method.getName());
+                return;
+            }
 
-            ClassReader reader = new ClassReader(mixinBytes);
-            reader.accept(new ClassVisitor(Opcodes.ASM9) {
+            String injectorDesc = DescriptorFormat.getMethodDescriptor(method);
+            new ClassReader(mixinBytes).accept(new ClassVisitor(Opcodes.ASM9) {
                 @Override
                 public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-                    Signature sig = annotation.signature();
-                    String methodDesc = DescriptorFormat.getMethodDescriptor(sig.parameters(), sig.result());
-                    if (name.equals(method.getName()) && desc.equals(methodDesc)) return visitor;
+                    if (name.equals(method.getName()) && desc.equals(injectorDesc)) return visitor;
                     return null;
                 }
             }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+
+            if (visitor.instructions == null) {
+                System.out.println("[Inject] ❌ instructions is null for " + method.getName());
+            }
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
@@ -91,48 +95,42 @@ public class InjectMethod {
 
     public byte[] inject(byte[] targetClassBytes) {
         if (visitor.instructions == null || visitor.instructions.size() == 0) {
+            System.out.println("[Inject] instructions == null for " + method.getName());
             return targetClassBytes;
         }
 
-        ClassReader reader = new ClassReader(targetClassBytes);
         ClassNode classNode = new ClassNode();
-        reader.accept(classNode, ClassReader.EXPAND_FRAMES);
+        new ClassReader(targetClassBytes).accept(classNode, ClassReader.EXPAND_FRAMES);
 
-        boolean injected = false;
         String injectorName = "injector$" + UUID.randomUUID().toString().replace("-", "");
-
         MethodNode injectorMethod = createInjectorMethodNode(injectorName);
         classNode.methods.add(injectorMethod);
 
+        Signature targetSig = annotation.signature();
+        String targetDesc = DescriptorFormat.getMethodDescriptor(targetSig.parameters(), targetSig.result());
+        boolean injected = false;
+
         for (MethodNode targetMethod : classNode.methods) {
-            if (targetMethod.name.equals(annotation.method())) {
+            if (targetMethod.name.equals(annotation.method()) && targetMethod.desc.equals(targetDesc)) {
                 injectIntoTargetMethod(targetMethod, injectorName);
                 injected = true;
                 break;
             }
         }
 
-        if (!injected) {
-            System.err.println("[Inject] Warning: Target method " + annotation.method() + " not found in " + targetClass.getName());
-            return targetClassBytes;
-        }
+        if (!injected) System.err.println("[Inject] Warning: Target method " + annotation.method() + targetDesc + " not found in " + targetClass.getName());
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
         classNode.accept(writer);
         return writer.toByteArray();
     }
 
-    public int getPriority() {
-        return annotation.priority();
-    }
-
     private MethodNode createInjectorMethodNode(String name) {
-        Signature sig = annotation.signature();
-        int access = DescriptorFormat.getMethodAccess(method) | Opcodes.ACC_PRIVATE;
-        String desc = DescriptorFormat.getMethodDescriptor(sig.parameters(), sig.result());
-        MethodNode mn = new MethodNode(access, name, desc, null, null);
+        int access = Opcodes.ACC_PRIVATE;
+        if (Modifier.isStatic(method.getModifiers())) access |= Opcodes.ACC_STATIC;
 
-        for (AbstractInsnNode node : visitor.instructions) mn.instructions.add(node);
+        MethodNode mn = new MethodNode(access, name, DescriptorFormat.getMethodDescriptor(method), null, null);
+        visitor.instructions.forEach(mn.instructions::add);
         mn.maxLocals = visitor.maxLocals;
         mn.maxStack = visitor.maxStack;
         return mn;
@@ -142,6 +140,15 @@ public class InjectMethod {
         AbstractInsnNode point = findInjectionPoint(targetMethod);
         if (point == null) return;
 
+        if (targetMethod.name.equals("<init>") && annotation.at() == At.HEAD) {
+            for (AbstractInsnNode insn : targetMethod.instructions) {
+                if (insn instanceof MethodInsnNode min && min.name.equals("<init>") && min.getOpcode() == Opcodes.INVOKESPECIAL) {
+                    point = insn.getNext();
+                    break;
+                }
+            }
+        }
+
         InsnList callCode = new InsnList();
         boolean targetStatic = (targetMethod.access & Opcodes.ACC_STATIC) != 0;
         boolean injectorStatic = Modifier.isStatic(method.getModifiers());
@@ -149,47 +156,29 @@ public class InjectMethod {
         if (!targetStatic && !injectorStatic) callCode.add(new VarInsnNode(Opcodes.ALOAD, 0));
 
         for (ArgumentParameter ap : argumentParams) {
-            Parameter param = ap.parameter();
-            int argIndex = findParameterIndex(param);
-            if (argIndex >= 0) {
-                int loadOpcode = DescriptorFormat.getLoadOpcode(param.getType());
-                int varIndex = getArgumentVarIndex(targetMethod, argIndex);
-                callCode.add(new VarInsnNode(loadOpcode, varIndex));
-            }
+            int idx = ap.parameter().getAnnotation(Arg.class).value();
+            int base = targetStatic ? 0 : 1;
+            Type[] types = Type.getArgumentTypes(targetMethod.desc);
+            for (int i = 0; i < idx; i++) base += types[i].getSize();
+            callCode.add(new VarInsnNode(DescriptorFormat.getLoadOpcode(ap.parameter().getType()), base));
         }
 
         for (LocalParameter lp : localParams) {
-            Parameter param = lp.parameter();
-            int localIndex = lp.parameter().getAnnotation(Local.class).value();
-            int foundIndex = findLocalVariableIndex(targetMethod, param.getName(), localIndex);
-            if (foundIndex >= 0) {
-                int loadOpcode = DescriptorFormat.getLoadOpcode(param.getType());
-                callCode.add(new VarInsnNode(loadOpcode, foundIndex));
-            }
+            int idx = lp.parameter().getAnnotation(Local.class).value();
+            callCode.add(new VarInsnNode(DescriptorFormat.getLoadOpcode(lp.parameter().getType()), idx));
         }
 
-        Signature sig = annotation.signature();
-        String desc = DescriptorFormat.getMethodDescriptor(sig.parameters(), sig.result());
-        int invokeOpcode = injectorStatic ? Opcodes.INVOKESTATIC : Opcodes.INVOKEVIRTUAL;
-        callCode.add(new MethodInsnNode(
-                invokeOpcode,
-                targetClass.getName().replace('.', '/'),
-                injectorName,
-                desc,
-                false
-        ));
+        callCode.add(new MethodInsnNode(injectorStatic ? Opcodes.INVOKESTATIC : Opcodes.INVOKEVIRTUAL,
+                targetClass.getName().replace('.', '/'), injectorName,
+                DescriptorFormat.getMethodDescriptor(method), false));
 
         switch (annotation.mode()) {
-            case BEFORE:
-                targetMethod.instructions.insertBefore(point, callCode);
-                break;
-            case AFTER:
-                targetMethod.instructions.insert(point, callCode);
-                break;
-            case CANSEL:
+            case BEFORE -> targetMethod.instructions.insertBefore(point, callCode);
+            case AFTER -> targetMethod.instructions.insert(point, callCode);
+            case CANSEL -> {
                 targetMethod.instructions.insertBefore(point, callCode);
                 targetMethod.instructions.remove(point);
-                break;
+            }
         }
 
         targetMethod.maxLocals = Math.max(targetMethod.maxLocals, visitor.maxLocals + 1);
@@ -198,33 +187,24 @@ public class InjectMethod {
 
     private AbstractInsnNode findInjectionPoint(MethodNode method) {
         if (annotation.at() == At.HEAD) return method.instructions.getFirst();
-
         if (annotation.at() == At.RETURN) {
-            int found = 0;
+            int f = 0;
             for (AbstractInsnNode insn : method.instructions) {
                 int op = insn.getOpcode();
-                if (op >= Opcodes.IRETURN && op <= Opcodes.RETURN) {
-                    if (found == annotation.index()) return insn;
-                    found++;
-                }
+                if (op >= Opcodes.IRETURN && op <= Opcodes.RETURN && f++ == annotation.index()) return insn;
             }
             return null;
         }
-
-        int found = 0;
+        int f = 0;
         for (AbstractInsnNode insn : method.instructions) {
-            if (matches(insn)) {
-                if (found == annotation.index()) return insn;
-                found++;
-            }
+            int t = insn.getType();
+            if (t == AbstractInsnNode.LABEL || t == AbstractInsnNode.LINE || t == AbstractInsnNode.FRAME) continue;
+            if (matches(insn) && f++ == annotation.index()) return insn;
         }
         return null;
     }
 
     private boolean matches(AbstractInsnNode insn) {
-        int type = insn.getType();
-        if (type == AbstractInsnNode.LABEL || type == AbstractInsnNode.LINE || type == AbstractInsnNode.FRAME) return false;
-
         return switch (annotation.at()) {
             case INVOKE -> insn instanceof MethodInsnNode && targetData.matches(insn);
             case FIELD -> insn instanceof FieldInsnNode && targetData.matches(insn);
@@ -238,27 +218,7 @@ public class InjectMethod {
         };
     }
 
-    private int findParameterIndex(Parameter param) {
-        Parameter[] params = method.getParameters();
-        for (int i = 0; i < params.length; i++) if (params[i].equals(param)) return i;
-        return -1;
-    }
-
-    private int getArgumentVarIndex(MethodNode method, int argIndex) {
-        int base = (method.access & Opcodes.ACC_STATIC) != 0 ? 0 : 1;
-        Type[] argTypes = Type.getArgumentTypes(method.desc);
-        for (int i = 0; i < argIndex; i++) base += argTypes[i].getSize();
-        return base;
-    }
-
-    private int findLocalVariableIndex(MethodNode method, String name, int hint) {
-        if (method.localVariables != null) {
-            for (LocalVariableNode local : method.localVariables) {
-                if (local.name.equals(name) && (hint == 0 || local.index == hint)) {
-                    return local.index;
-                }
-            }
-        }
-        return hint >= 0 ? hint : -1;
+    public int getPriority() {
+        return annotation.priority();
     }
 }

@@ -4,6 +4,7 @@ import io.gammax.api.*;
 import io.gammax.api.util.At;
 import io.gammax.api.util.Mode;
 import io.gammax.api.util.Signature;
+import io.gammax.test.access.VectorAccess;
 import org.bukkit.util.Vector;
 
 @Mixin(Vector.class)
@@ -17,18 +18,6 @@ public abstract class VectorMixin {
 
     @Shadow
     protected double z;
-
-    @Shadow
-    public abstract Vector multiply(double m);
-
-    @Shadow
-    public abstract Vector add(Vector other);
-
-    @Shadow
-    public abstract double length();
-
-    @Shadow
-    public abstract Vector clone();
 
     @Unique
     private int operationCount;
@@ -78,26 +67,26 @@ public abstract class VectorMixin {
                     result = Vector.class
             )
     )
-    private void onMultiply(@Arg double m) {
+    private void onMultiply(@Arg(0) double m) {
         incrementCount("multiply(" + m + ")");
         System.out.println("[Inject HEAD] Multiplying by " + m);
     }
 
-//    @Inject(
-//            method = "length",
-//            at = At.HEAD,
-//            mode = Mode.CANSEL,
-//            signature = @Signature(result = double.class)
-//    )
-//    private double onLength() {
-//        double len = Math.sqrt(x*x + y*y + z*z);
-//        if (len < EPSILON) {
-//            System.out.println("[Inject RETURN] Zero-length detected, returning 0");
-//            return 0.0;
-//        }
-//        System.out.println("[Inject RETURN] Length = " + len);
-//        return len;
-//    }
+    @Inject(
+            method = "length",
+            at = At.HEAD,
+            mode = Mode.CANSEL,
+            signature = @Signature(result = double.class)
+    )
+    private double onLength() {
+        double len = Math.sqrt(x*x + y*y + z*z);
+        if (len < EPSILON) {
+            System.out.println("[Inject RETURN] Zero-length detected, returning 0");
+            return 0.0;
+        }
+        System.out.println("[Inject RETURN] Length = " + len);
+        return len;
+    }
 
     @Inject(
             method = "clone",
@@ -116,7 +105,7 @@ public abstract class VectorMixin {
                     result = Vector.class
             )
     )
-    private void onAdd(@Arg Vector other) {
+    private void onAdd(@Arg(0) Vector other) {
         incrementCount("add(" + other + ")");
         System.out.println("[Inject HEAD] Adding " + other);
     }

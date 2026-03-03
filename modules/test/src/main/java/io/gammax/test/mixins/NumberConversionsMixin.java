@@ -22,7 +22,7 @@ public abstract class NumberConversionsMixin {
                     result = int.class
             )
     )
-    private static void onFloor(@Arg double num) {
+    private static void onFloor(@Arg(0) double num) {
         floorCallCount++;
         System.out.println("[Inject HEAD] floor() called with " + num + " (total calls: " + floorCallCount + ")");
     }

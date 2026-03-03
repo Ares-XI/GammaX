@@ -116,6 +116,10 @@ public class TestMixinCommand implements CommandExecutor {
         BoundingBox box = new BoundingBox(0, 0, 0, 10, 10, 10);
         sender.sendMessage("§7Создан бокс: " + box);
 
+        box.shift(1.0, 1.0, 1.0);
+        sender.sendMessage(String.valueOf(box.getVolume()));
+        sender.sendMessage(String.valueOf(box.contains(1.0, 1.0, 1.0)));
+
         try {
             BoundingBoxAccess access = (BoundingBoxAccess) box;
 
@@ -165,6 +169,8 @@ public class TestMixinCommand implements CommandExecutor {
         Method resetMethod = NumberConversions.class.getDeclaredMethod("resetCount");
         resetMethod.setAccessible(true);
         resetMethod.invoke(null);
+
+        sender.sendMessage(String.valueOf(NumberConversions.floor(1.0)));
 
         int f1 = NumberConversions.floor(5.7);
         int f2 = NumberConversions.floor(1000000.5);

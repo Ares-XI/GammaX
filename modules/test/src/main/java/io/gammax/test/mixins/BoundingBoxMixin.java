@@ -2,7 +2,9 @@ package io.gammax.test.mixins;
 
 import io.gammax.api.*;
 import io.gammax.api.util.At;
+import io.gammax.api.util.Mode;
 import io.gammax.api.util.Signature;
+import io.gammax.test.access.BoundingBoxAccess;
 import org.bukkit.util.BoundingBox;
 
 @Mixin(BoundingBox.class)
@@ -25,12 +27,6 @@ public abstract class BoundingBoxMixin {
 
     @Shadow
     private double maxZ;
-
-    @Shadow
-    public abstract BoundingBox shift(double x, double y, double z);
-
-    @Shadow
-    public abstract boolean contains(double x, double y, double z);
 
     @Shadow
     public abstract double getVolume();
@@ -86,7 +82,7 @@ public abstract class BoundingBoxMixin {
                     result = BoundingBox.class
             )
     )
-    private void onShift(@Arg double x, @Arg double y, @Arg double z) {
+    private void onShift(@Arg(0) double x, @Arg(1) double y, @Arg(2) double z) {
         System.out.println("[Inject HEAD] Shifting by (" + x + ", " + y + ", " + z + ")");
         System.out.println("[Inject HEAD] Current: " + getDimensions());
     }
@@ -94,13 +90,10 @@ public abstract class BoundingBoxMixin {
     @Inject(
             method = "getVolume",
             at = At.RETURN,
-            signature = @Signature(result = double.class)
+            mode = Mode.CANSEL
     )
     private double onGetVolume() {
-        double volume = getVolume();
-        double expanded = volume * EXPAND_FACTOR;
-        System.out.println("[Inject RETURN] Volume: " + volume + " (expanded: " + expanded + ")");
-        return expanded;
+        return (maxX - minX) * (maxY - minY) * (maxZ - minZ) * EXPAND_FACTOR;
     }
 
     @Inject(
@@ -112,10 +105,10 @@ public abstract class BoundingBoxMixin {
                             double.class,
                             double.class
                     },
-                    result = BoundingBox.class
+                    result = boolean.class
             )
     )
-    private void onContains(@Arg double x, @Arg double y, @Arg double z) {
+    private void onContains(@Arg(0) double x, @Arg(1) double y, @Arg(2) double z) {
         checkCount++;
         System.out.println("[Inject HEAD] Contains check #" + checkCount + " for (" + x + ", " + y + ", " + z + ")");
     }

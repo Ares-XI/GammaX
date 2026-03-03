@@ -65,7 +65,7 @@ public class MixinTransformer implements ClassFileTransformer {
 
                     for (UniqueField uniqueField : mixin.uniqueFields) bytecode = uniqueField.addField(bytecode);
                     for (UniqueMethod uniqueMethod : mixin.uniqueMethods) bytecode = uniqueMethod.addMethod(bytecode);
-                    for (InjectMethod injectMethod : injectors) bytecode = injectMethod.inject(bytecode);
+                    for (InjectMethod injectMethod : mixin.injectMethods) bytecode = injectMethod.inject(bytecode);
 
                     return bytecode;
                 }

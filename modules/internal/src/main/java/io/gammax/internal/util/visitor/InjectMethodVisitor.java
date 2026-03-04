@@ -45,10 +45,7 @@ public class InjectMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitTypeInsn(int opcode, String type) {
-        if (type.equals(mixinName)) {
-            System.out.println("type = targetName");
-            type = targetName;
-        }
+        if (type.equals(mixinName)) type = targetName;
         insnList.add(new TypeInsnNode(opcode, type));
     }
 
@@ -56,36 +53,18 @@ public class InjectMethodVisitor extends MethodVisitor {
     public void visitFieldInsn(int opcode, String owner, String name, String desc) {
         String key = name + ":" + desc;
         String newOwner = fieldMap.get(key);
-        if (newOwner != null) {
-            System.out.println("newOwner != null");
-            insnList.add(new FieldInsnNode(opcode, newOwner, name, desc));
-        }
-        else if (owner.equals(mixinName)) {
-            System.out.println("owner.equals(mixinName)");
-            insnList.add(new FieldInsnNode(opcode, targetName, name, desc));
-        }
-        else {
-            System.out.println("else");
-            insnList.add(new FieldInsnNode(opcode, owner, name, desc));
-        }
+        if (newOwner != null) insnList.add(new FieldInsnNode(opcode, newOwner, name, desc));
+        else if (owner.equals(mixinName)) insnList.add(new FieldInsnNode(opcode, targetName, name, desc));
+        else insnList.add(new FieldInsnNode(opcode, owner, name, desc));
     }
 
     @Override
     public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
         String key = name + ":" + desc;
         String newOwner = methodMap.get(key);
-        if (newOwner != null) {
-            System.out.println("newOwner != null");
-            insnList.add(new MethodInsnNode(opcode, newOwner, name, desc, itf));
-        }
-        else if (owner.equals(mixinName)) {
-            System.out.println("owner.equals(mixinName)");
-            insnList.add(new MethodInsnNode(opcode, targetName, name, desc, itf));
-        }
-        else {
-            System.out.println("else");
-            insnList.add(new MethodInsnNode(opcode, owner, name, desc, itf));
-        }
+        if (newOwner != null) insnList.add(new MethodInsnNode(opcode, newOwner, name, desc, itf));
+        else if (owner.equals(mixinName)) insnList.add(new MethodInsnNode(opcode, targetName, name, desc, itf));
+        else insnList.add(new MethodInsnNode(opcode, owner, name, desc, itf));
     }
 
     @Override
@@ -105,10 +84,7 @@ public class InjectMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitLdcInsn(Object value) {
-        if (value instanceof Type t && t.getInternalName().equals(mixinName)) {
-            System.out.println("value instanceof Type t && t.getInternalName().equals(mixinName)");
-            value = Type.getObjectType(targetName);
-        }
+        if (value instanceof Type t && t.getInternalName().equals(mixinName)) value = Type.getObjectType(targetName);
         insnList.add(new LdcInsnNode(value));
     }
 
@@ -135,19 +111,13 @@ public class InjectMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitMultiANewArrayInsn(String desc, int dims) {
-        if (desc.contains(mixinName)) {
-            System.out.println("desc.contains(mixinName)");
-            desc = desc.replace(mixinName, targetName);
-        }
+        if (desc.contains(mixinName)) desc = desc.replace(mixinName, targetName);
         insnList.add(new MultiANewArrayInsnNode(desc, dims));
     }
 
     @Override
     public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
-        if (type != null && type.equals(mixinName)) {
-            System.out.println("type != null && type.equals(mixinName)");
-            type = targetName;
-        }
+        if (type != null && type.equals(mixinName)) type = targetName;
         tryCatchBlocks.add(new TryCatchBlockNode(
                 new LabelNode(start),
                 new LabelNode(end),

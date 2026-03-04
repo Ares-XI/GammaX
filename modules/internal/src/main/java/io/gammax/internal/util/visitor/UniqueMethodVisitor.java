@@ -18,6 +18,9 @@ public class UniqueMethodVisitor extends MethodVisitor {
     public final Map<String, String> methodMap = new HashMap<>();
     public final InsnList insnList = new InsnList();
 
+    public int maxLocals;
+    public int maxStack;
+
     public UniqueMethodVisitor() {
         super(Opcodes.ASM9);
     }
@@ -142,7 +145,10 @@ public class UniqueMethodVisitor extends MethodVisitor {
     }
 
     @Override
-    public void visitMaxs(int maxStack, int maxLocals) {}
+    public void visitMaxs(int maxStack, int maxLocals) {
+        this.maxStack = maxStack;
+        this.maxLocals = maxLocals;
+    }
 
     @Override
     public void visitEnd() {

@@ -35,7 +35,7 @@ public class MixinTransformer implements ClassFileTransformer {
             ClassLoader loader, String className,
             Class<?> classBeingRedefined,
             ProtectionDomain protectionDomain,
-            byte[] classFile
+            byte[] bytecode
     ) {
         if(className == null) return null;
         for(String str: unsupportedPaths) if(className.startsWith(str)) return null;
@@ -43,16 +43,16 @@ public class MixinTransformer implements ClassFileTransformer {
         if(MixinRegistry.isTargetPath(className.replace("/", "."))) {
             for (MixinClass mixin : MixinRegistry.getCache()) {
                 if (mixin.getTargetClass().getName().replace('.', '/').equals(className)) {
-                    ClassReader reader = new ClassReader(classFile);
-                    ClassNode classNode = new ClassNode();
 
+                    ClassReader reader = new ClassReader(bytecode);
+                    ClassNode classNode = new ClassNode();
                     reader.accept(classNode, ClassReader.EXPAND_FRAMES);
 
-                    for (Class<?> iface : mixin.getInterfaces()) {
-                        String ifaceName = iface.getName().replace(".", "/");
+                    for (Class<?> interfaceClass : mixin.getInterfaces()) {
+                        String interfaceName = interfaceClass.getName().replace(".", "/");
                         MixinJarRegister registry = MixinRegistry.getMixinJarRegister();
-                        registry.append((URLClassLoader) loader, new File(registry.getJarFile(iface.getName()).getName()).getName());
-                        if (!classNode.interfaces.contains(ifaceName)) classNode.interfaces.add(ifaceName);
+                        registry.append((URLClassLoader) loader, new File(registry.getJarFile(interfaceClass.getName()).getName()).getName());
+                        classNode.interfaces.add(interfaceName);
                     }
 
                     ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
@@ -61,11 +61,11 @@ public class MixinTransformer implements ClassFileTransformer {
                     injectors.sort(Comparator.comparingInt(InjectMethod::getPriority));
                     classNode.accept(writer);
 
-                    byte[] bytecode = writer.toByteArray();
+                    bytecode = writer.toByteArray();
 
                     for (UniqueField uniqueField : mixin.uniqueFields) bytecode = uniqueField.addField(bytecode);
-                    for (UniqueMethod uniqueMethod : mixin.uniqueMethods) bytecode = uniqueMethod.addMethod(bytecode);
-                    for (InjectMethod injectMethod : mixin.injectMethods) bytecode = injectMethod.inject(bytecode);
+                    for (UniqueMethod injectMethod : mixin.uniqueMethods) bytecode = injectMethod.addMethod(bytecode);
+                    for (InjectMethod injectMethod : injectors) bytecode = injectMethod.inject(bytecode);
 
                     return bytecode;
                 }

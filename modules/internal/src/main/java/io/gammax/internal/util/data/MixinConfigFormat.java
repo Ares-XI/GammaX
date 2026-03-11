@@ -1,4 +1,4 @@
-package io.gammax.internal.json;
+package io.gammax.internal.util.data;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -8,7 +8,7 @@ import io.gammax.test.access.BoundingBoxAccess;
 import org.bukkit.util.BoundingBox;
 
 @Mixin(BoundingBox.class)
-public abstract class BoundingBoxMixin implements BoundingBoxAccess {
+public abstract class BoundingBoxMixin {
 
     @Shadow
     private double minX;
@@ -37,7 +37,7 @@ public abstract class BoundingBoxMixin implements BoundingBoxAccess {
     @Unique
     public static final double EXPAND_FACTOR = 1.1;
 
-    @Override
+//    @Override
     @Unique
     public void expandSymmetrical(double amount) {
         minX -= amount;
@@ -49,13 +49,13 @@ public abstract class BoundingBoxMixin implements BoundingBoxAccess {
         System.out.println("[BoundingBox] Expanded by " + amount);
     }
 
-    @Override
+//    @Override
     @Unique
     public String getDimensions() {
         return String.format("BoundingBox{min=(%.2f,%.2f,%.2f), max=(%.2f,%.2f,%.2f)}", minX, minY, minZ, maxX, maxY, maxZ);
     }
 
-    @Override
+//    @Override
     @Unique
     public int getCheckCount() {
         return checkCount;

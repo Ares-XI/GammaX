@@ -1,15 +1,16 @@
-package io.gammax.internal.format;
+package io.gammax.internal.format.functional;
 
 import io.gammax.api.*;
 import io.gammax.api.util.At;
 import io.gammax.api.util.Signature;
-import io.gammax.internal.MixinRegistry;
+import io.gammax.internal.format.FunctionalModifier;
 import io.gammax.internal.format.data.ArgumentParameter;
 import io.gammax.internal.format.data.LocalParameter;
 import io.gammax.internal.format.data.ShadowField;
 import io.gammax.internal.format.data.ShadowMethod;
+import io.gammax.internal.instrumentation.cashing.MixinClassLoader;
 import io.gammax.internal.util.DescriptorFormat;
-import io.gammax.internal.util.TargetData;
+import io.gammax.internal.util.data.TargetData;
 import io.gammax.internal.util.visitor.InjectMethodVisitor;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
@@ -18,7 +19,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
-public class InjectMethod {
+public class InjectMethod implements FunctionalModifier {
     private final Method method;
     private final Class<?> targetClass;
     private final Inject annotation;
@@ -70,7 +71,7 @@ public class InjectMethod {
 
     private void extractMethodInstructions() {
         try {
-            byte[] mixinBytes = MixinRegistry.getMixinClassLoader().getClassBytes(method.getDeclaringClass().getName());
+            byte[] mixinBytes = MixinClassLoader.instance.getClassBytes(method.getDeclaringClass().getName());
             if (mixinBytes == null) {
                 System.out.println("[Inject] mixinBytes = null for " + method.getName());
                 return;
@@ -93,7 +94,8 @@ public class InjectMethod {
         }
     }
 
-    public byte[] inject(byte[] targetClassBytes) {
+    @Override
+    public byte[] modify(byte[] targetClassBytes) {
         if (visitor.instructions == null || visitor.instructions.size() == 0) {
             System.out.println("[Inject] instructions == null for " + method.getName());
             return targetClassBytes;

@@ -1,7 +1,8 @@
-package io.gammax.internal.util;
+package io.gammax.internal.util.data;
 
 import io.gammax.api.util.TargetReference;
 import io.gammax.api.util.At;
+import io.gammax.internal.util.DescriptorFormat;
 import org.objectweb.asm.tree.*;
 
 import java.util.List;

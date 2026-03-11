@@ -1,7 +1,8 @@
-package io.gammax.internal.json;
+package io.gammax.internal.instrumentation.transform;
 
 import com.google.gson.Gson;
-import io.gammax.internal.MixinRegistry;
+import io.gammax.internal.instrumentation.cashing.MixinJarManager;
+import io.gammax.internal.util.data.MixinConfigFormat;
 
 import java.io.*;
 import java.util.*;
@@ -9,6 +10,9 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public class MixinJsonParser {
+
+    public static final MixinJsonParser instance = new MixinJsonParser();
+
     private final Gson GSON = new Gson();
 
     public List<MixinConfigFormat> loadAllMixinConfigs() {
@@ -20,7 +24,7 @@ public class MixinJsonParser {
             if (dir.exists() && dir.isDirectory()) {
                 for(File jarFile: findJarsWithMixins(dir)) {
                     try {
-                        MixinRegistry.getMixinJarRegister().registerJar(jarFile);
+                        MixinJarManager.instance.registerJar(jarFile);
                     } catch (Exception e) {
                         e.printStackTrace(System.err);
                     }
@@ -37,7 +41,7 @@ public class MixinJsonParser {
                 File jarFile = new File(part);
                 if (jarFile.exists()) {
                     try {
-                        MixinRegistry.getMixinJarRegister().registerJar(jarFile);
+                        MixinJarManager.instance.registerJar(jarFile);
                     } catch (Exception e) {
                         e.printStackTrace(System.err);
                     }
@@ -53,7 +57,7 @@ public class MixinJsonParser {
                     try {
                         try (JarFile jar = new JarFile(jarFile)) {
                             if (jar.getJarEntry("mixins.json") != null) {
-                                MixinRegistry.getMixinJarRegister().registerJar(jarFile);
+                                MixinJarManager.instance.registerJar(jarFile);
                                 parseConfigFromJar(jar, result);
                             }
                         }
@@ -100,7 +104,5 @@ public class MixinJsonParser {
         }
     }
 
-    public void close() {
-        MixinRegistry.getMixinJarRegister().close();
-    }
+    private MixinJsonParser() {}
 }

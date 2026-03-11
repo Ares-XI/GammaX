@@ -1,8 +1,9 @@
-package io.gammax.internal.format;
+package io.gammax.internal.format.functional;
 
-import io.gammax.internal.MixinRegistry;
+import io.gammax.internal.format.FunctionalModifier;
 import io.gammax.internal.format.data.ShadowField;
 import io.gammax.internal.format.data.ShadowMethod;
+import io.gammax.internal.instrumentation.cashing.MixinClassLoader;
 import io.gammax.internal.util.DescriptorFormat;
 import io.gammax.internal.util.visitor.UniqueMethodVisitor;
 import org.objectweb.asm.*;
@@ -10,7 +11,7 @@ import org.objectweb.asm.tree.*;
 
 import java.lang.reflect.Method;
 
-public class UniqueMethod {
+public class UniqueMethod implements FunctionalModifier {
     private final Method method;
     private final Class<?> targetClass;
 
@@ -64,7 +65,7 @@ public class UniqueMethod {
 
     private void extractMethodInstructions() {
         try {
-            byte[] mixinBytes = MixinRegistry.getMixinClassLoader().getClassBytes(method.getDeclaringClass().getName());
+            byte[] mixinBytes = MixinClassLoader.instance.getClassBytes(method.getDeclaringClass().getName());
             if (mixinBytes == null) return;
 
             ClassReader reader = new ClassReader(mixinBytes);
@@ -84,7 +85,8 @@ public class UniqueMethod {
         }
     }
 
-    public byte[] addMethod(byte[] targetClassBytes) {
+    @Override
+    public byte[] modify(byte[] targetClassBytes) {
         if (instructions == null || instructions.size() == 0) return targetClassBytes;
 
         ClassReader reader = new ClassReader(targetClassBytes);

@@ -1,12 +1,13 @@
-package io.gammax.internal.format;
+package io.gammax.internal.format.functional;
 
+import io.gammax.internal.format.FunctionalModifier;
 import io.gammax.internal.util.DescriptorFormat;
 import org.objectweb.asm.*;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
-public class UniqueField {
+public class UniqueField implements FunctionalModifier {
     private final Field field;
     private Object constantValue;
 
@@ -42,7 +43,8 @@ public class UniqueField {
         }
     }
 
-    public byte[] addField(byte[] originalClassBytes) {
+    @Override
+    public byte[] modify(byte[] originalClassBytes) {
         ClassReader reader = new ClassReader(originalClassBytes);
         ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
 

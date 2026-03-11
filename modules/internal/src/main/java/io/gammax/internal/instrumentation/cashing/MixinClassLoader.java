@@ -1,17 +1,17 @@
-package io.gammax.internal.jar;
+package io.gammax.internal.instrumentation.cashing;
 
-import io.gammax.internal.MixinRegistry;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URLClassLoader;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-public class MixinClassLoader extends ClassLoader {
+public class MixinClassLoader extends ClassLoader implements AutoCloseable {
+
+    public static final MixinClassLoader instance = new MixinClassLoader();
+
     private final Map<String, byte[]> byteCache = new ConcurrentHashMap<>();
     private final Map<String, Class<?>> classCache = new ConcurrentHashMap<>();
 
@@ -34,7 +34,7 @@ public class MixinClassLoader extends ClassLoader {
         if (byteCache.containsKey(className)) return byteCache.get(className);
 
         String classPath = className.replace('.', '/') + ".class";
-        Map<String, JarFile> jarFiles = MixinRegistry.getMixinJarRegister().getJarFiles();
+        Map<String, JarFile> jarFiles = MixinJarManager.instance.getJarFiles();
 
         for (JarFile jar : jarFiles.values()) {
             try {
@@ -59,8 +59,10 @@ public class MixinClassLoader extends ClassLoader {
     }
 
 
-    public void clearCache() {
+    public void close() {
         byteCache.clear();
         classCache.clear();
     }
+
+    private MixinClassLoader() {}
 }

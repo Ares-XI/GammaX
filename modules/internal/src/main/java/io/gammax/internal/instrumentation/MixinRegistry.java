@@ -1,4 +1,4 @@
-package io.gammax.internal;
+package io.gammax.internal.instrumentation;
 
 import io.gammax.api.*;
 import io.gammax.internal.format.*;
@@ -6,10 +6,13 @@ import io.gammax.internal.format.data.ArgumentParameter;
 import io.gammax.internal.format.data.LocalParameter;
 import io.gammax.internal.format.data.ShadowField;
 import io.gammax.internal.format.data.ShadowMethod;
-import io.gammax.internal.jar.MixinJarRegister;
-import io.gammax.internal.jar.MixinClassLoader;
-import io.gammax.internal.json.MixinConfigFormat;
-import io.gammax.internal.json.MixinJsonParser;
+import io.gammax.internal.format.functional.InjectMethod;
+import io.gammax.internal.format.functional.InterfaceImplementation;
+import io.gammax.internal.format.functional.UniqueField;
+import io.gammax.internal.format.functional.UniqueMethod;
+import io.gammax.internal.instrumentation.cashing.MixinClassLoader;
+import io.gammax.internal.instrumentation.transform.MixinJsonParser;
+import io.gammax.internal.util.data.MixinConfigFormat;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -17,34 +20,24 @@ import java.lang.reflect.Parameter;
 import java.util.*;
 
 public class MixinRegistry {
-    private static final Set<MixinClass> mixins = new HashSet<>();
 
-    private static final MixinClassLoader loader = new MixinClassLoader();
+    public static final MixinRegistry instance = new MixinRegistry();
 
-    private static final MixinJarRegister jars = new MixinJarRegister();
+    private final Set<MixinClass> mixins = new HashSet<>();
 
-    public static MixinClass[] getCache() {
+    public MixinClass[] getCache() {
         return mixins.toArray(new MixinClass[0]);
     }
 
-    public static MixinClassLoader getMixinClassLoader() {
-        return loader;
-    }
+    public void clearCache() { mixins.clear(); }
 
-    public static MixinJarRegister getMixinJarRegister() {
-        return jars;
-    }
-
-    public static void clearCache() { mixins.clear(); }
-
-    public static boolean isTargetPath(String className) {
-        for(MixinClass mixin: MixinRegistry.getCache()) if(mixin.getTargetClass().getName().equals(className)) return true;
+    public boolean isTargetPath(String className) {
+        for(MixinClass mixin: MixinRegistry.instance.getCache()) if(mixin.getTargetClass().getName().equals(className)) return true;
         return false;
     }
 
-    public static void loadCache() {
-        MixinJsonParser parser = new MixinJsonParser();
-        List<MixinConfigFormat> parsed = parser.loadAllMixinConfigs();
+    public void loadCache() {
+        List<MixinConfigFormat> parsed = MixinJsonParser.instance.loadAllMixinConfigs();
 
         System.out.println("Find " + parsed.size() + " mixins.json files");
 
@@ -58,19 +51,21 @@ public class MixinRegistry {
             for(String path: format.mixins) {
                 try {
                     System.out.println(path);
-                    Class<?> clazz = loader.loadClass(path);
+                    Class<?> clazz = MixinClassLoader.instance.loadClass(path);
 
                     List<ShadowField> shadowFieldsList = new ArrayList<>();
                     List<ShadowMethod> shadowMethodsList = new ArrayList<>();
                     List<UniqueField> uniqueFieldsList = new ArrayList<>();
                     List<UniqueMethod> uniqueMethodsList = new ArrayList<>();
                     List<InjectMethod> injectMethodsList = new ArrayList<>();
-                    Class<?>[] interfaces = clazz.getInterfaces();
+                    List<InterfaceImplementation> interfaceImplementationList = new ArrayList<>();
 
                     List<Method> tempUniqueMethods = new ArrayList<>();
                     List<Method> tempInjectMethods = new ArrayList<>();
                     Map<Method, List<Parameter>> tempArgumentParameters = new HashMap<>();
                     Map<Method, List<Parameter>> tempLocalParameters = new HashMap<>();
+
+                    for(Class<?> interfaceClass: clazz.getInterfaces()) interfaceImplementationList.add(new InterfaceImplementation(interfaceClass));
 
                     for(Field field: clazz.getDeclaredFields()) {
                         if(field.isAnnotationPresent(Shadow.class) && field.isAnnotationPresent(Unique.class)) {
@@ -160,7 +155,7 @@ public class MixinRegistry {
                             shadowMethodsList.toArray(new ShadowMethod[0]),
                             uniqueMethodsList.toArray(new UniqueMethod[0]),
                             injectMethodsList.toArray(new InjectMethod[0]),
-                            interfaces
+                            interfaceImplementationList.toArray(new InterfaceImplementation[0])
                     );
 
                     if(mixinClass.isValid()) mixins.add(mixinClass);
@@ -177,6 +172,7 @@ public class MixinRegistry {
                 }
             }
         }
-        parser.close();
     }
+
+    private MixinRegistry() {}
 }

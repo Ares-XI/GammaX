@@ -1,9 +1,13 @@
 package io.gammax.internal.format;
 
 import io.gammax.api.Mixin;
-import io.gammax.internal.MixinRegistry;
 import io.gammax.internal.format.data.ShadowField;
 import io.gammax.internal.format.data.ShadowMethod;
+import io.gammax.internal.format.functional.InjectMethod;
+import io.gammax.internal.format.functional.InterfaceImplementation;
+import io.gammax.internal.format.functional.UniqueField;
+import io.gammax.internal.format.functional.UniqueMethod;
+import io.gammax.internal.instrumentation.cashing.MixinClassLoader;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Modifier;
@@ -23,9 +27,9 @@ public class MixinClass {
 
     public final InjectMethod[] injectMethods;
 
-    private final boolean isValid;
+    public final InterfaceImplementation[] interfaceImplementations;
 
-    private final Class<?>[] interfaces;
+    private final boolean isValid;
 
     public MixinClass(
             @NotNull Class<?> clazz,
@@ -34,7 +38,7 @@ public class MixinClass {
             @NotNull ShadowMethod[] shadowMethods,
             @NotNull UniqueMethod[] uniqueMethods,
             @NotNull InjectMethod[] injectMethods,
-            Class<?>[] interfaces
+            @NotNull InterfaceImplementation[] interfaceImplementations
     ) {
         boolean add = false;
 
@@ -50,11 +54,11 @@ public class MixinClass {
         this.shadowMethods = shadowMethods;
         this.uniqueMethods = uniqueMethods;
         this.injectMethods = injectMethods;
-        this.interfaces = interfaces;
+        this.interfaceImplementations = interfaceImplementations;
 
         try {
-            MixinRegistry.getMixinClassLoader().loadClass(mixinClazz.getName());
-            MixinRegistry.getMixinClassLoader().loadClass(targetClass.getName());
+            MixinClassLoader.instance.loadClass(mixinClazz.getName());
+            MixinClassLoader.instance.loadClass(targetClass.getName());
         } catch (ClassNotFoundException e) {
             e.printStackTrace(System.err);
             add = false;
@@ -65,10 +69,6 @@ public class MixinClass {
 
     public Class<?> getMixinClass() {
         return mixinClazz;
-    }
-
-    public Class<?>[] getInterfaces() {
-        return interfaces;
     }
 
     public Class<?> getTargetClass() {

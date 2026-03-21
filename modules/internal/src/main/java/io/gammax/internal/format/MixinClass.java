@@ -8,7 +8,7 @@ import io.gammax.internal.format.functional.InterfaceImplementation;
 import io.gammax.internal.format.functional.UniqueField;
 import io.gammax.internal.format.functional.UniqueMethod;
 import io.gammax.internal.format.groups.ValidCheck;
-import io.gammax.internal.instrumentation.JarFileClassLoader;
+import io.gammax.internal.instrumentation.jar.JarFileClassLoader;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Modifier;

@@ -1,4 +1,4 @@
-package io.gammax.internal.util;
+package io.gammax.internal.instrumentation.jar;
 
 import java.io.*;
 import java.nio.file.*;

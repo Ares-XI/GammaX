@@ -1,4 +1,4 @@
-package io.gammax.internal.instrumentation;
+package io.gammax.internal.instrumentation.jar;
 
 import io.gammax.internal.instrumentation.cashing.JarManager;
 

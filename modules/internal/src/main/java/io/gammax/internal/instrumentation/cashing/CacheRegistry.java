@@ -10,7 +10,7 @@ import io.gammax.internal.format.functional.InjectMethod;
 import io.gammax.internal.format.functional.InterfaceImplementation;
 import io.gammax.internal.format.functional.UniqueField;
 import io.gammax.internal.format.functional.UniqueMethod;
-import io.gammax.internal.instrumentation.JarFileClassLoader;
+import io.gammax.internal.instrumentation.jar.JarFileClassLoader;
 import io.gammax.internal.instrumentation.transform.GammaJsonParser;
 import io.gammax.internal.util.data.GammaConfigFormat;
 

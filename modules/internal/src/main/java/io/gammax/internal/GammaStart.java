@@ -1,10 +1,10 @@
 package io.gammax.internal;
 
-import io.gammax.internal.instrumentation.JarFileClassLoader;
+import io.gammax.internal.instrumentation.jar.JarFileClassLoader;
 import io.gammax.internal.instrumentation.cashing.JarManager;
 import io.gammax.internal.instrumentation.cashing.CacheRegistry;
 import io.gammax.internal.instrumentation.transform.GammaTransformer;
-import io.gammax.internal.util.GammaJarCreator;
+import io.gammax.internal.instrumentation.jar.GammaJarCreator;
 
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;

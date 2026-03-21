@@ -1,13 +1,12 @@
 package io.gammax.internal.instrumentation.transform;
 
-import io.gammax.internal.MixinStart;
+import io.gammax.internal.GammaStart;
 import io.gammax.internal.format.*;
 import io.gammax.internal.format.functional.InjectMethod;
 import io.gammax.internal.format.functional.InterfaceImplementation;
 import io.gammax.internal.format.functional.UniqueField;
 import io.gammax.internal.format.functional.UniqueMethod;
-import io.gammax.internal.instrumentation.cashing.MixinRegistry;
-import io.gammax.internal.util.MixinJarCreator;
+import io.gammax.internal.instrumentation.cashing.CacheRegistry;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,9 +17,9 @@ import java.security.ProtectionDomain;
 import java.util.*;
 import java.util.jar.JarFile;
 
-public class MixinTransformer implements ClassFileTransformer {
+public class GammaTransformer implements ClassFileTransformer {
 
-    public static final MixinTransformer instance = new MixinTransformer();
+    public static final GammaTransformer instance = new GammaTransformer();
 
     private static final List<String> unsupportedPaths = new ArrayList<>();
 
@@ -48,11 +47,11 @@ public class MixinTransformer implements ClassFileTransformer {
         for(String str: unsupportedPaths) if(className.startsWith(str)) return null;
 
         if ((className.startsWith("org/bukkit/") || className.startsWith("net/minecraft/server/")) && !isUnlock) {
-            for (Path path : MixinStart.paths) {
+            for (Path path : GammaStart.paths) {
                 try (JarFile jarFile = new JarFile(String.valueOf(path))) {
-                    MixinStart.getAddUrl().setAccessible(true);
-                    MixinStart.getAddUrl().invoke(loader, path.toUri().toURL());
-                    MixinStart.getAddUrl().setAccessible(false);
+                    GammaStart.getAddUrl().setAccessible(true);
+                    GammaStart.getAddUrl().invoke(loader, path.toUri().toURL());
+                    GammaStart.getAddUrl().setAccessible(false);
                     System.out.println("Added to classloader: " + jarFile.getName());
                 } catch (IOException | IllegalAccessException | InvocationTargetException e) {
                     System.err.println("Failed to add JAR to classloader: " + path);
@@ -67,8 +66,8 @@ public class MixinTransformer implements ClassFileTransformer {
             System.out.println("parent: " + loader.getParent().getParent());
         }
 
-        if(MixinRegistry.instance.isTargetPath(className.replace("/", "."))) {
-            for (MixinClass mixin : MixinRegistry.instance.getCache()) {
+        if(CacheRegistry.instance.isTargetPath(className.replace("/", "."))) {
+            for (MixinClass mixin : CacheRegistry.instance.getCache()) {
                 if (mixin.getTargetClass().getName().replace('.', '/').equals(className)) {
                     List<InjectMethod> injectors = Arrays.asList(mixin.injectMethods);
                     injectors.sort(Comparator.comparingInt(InjectMethod::getPriority));
@@ -109,5 +108,5 @@ public class MixinTransformer implements ClassFileTransformer {
         return jarFiles;
     }
 
-    private MixinTransformer() {}
+    private GammaTransformer() {}
 }

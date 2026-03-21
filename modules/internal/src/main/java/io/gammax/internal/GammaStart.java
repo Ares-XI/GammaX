@@ -1,10 +1,10 @@
 package io.gammax.internal;
 
-import io.gammax.internal.instrumentation.loaders.JarFileClassLoader;
-import io.gammax.internal.instrumentation.cashing.MixinJarManager;
-import io.gammax.internal.instrumentation.cashing.MixinRegistry;
-import io.gammax.internal.instrumentation.transform.MixinTransformer;
-import io.gammax.internal.util.MixinJarCreator;
+import io.gammax.internal.instrumentation.JarFileClassLoader;
+import io.gammax.internal.instrumentation.cashing.JarManager;
+import io.gammax.internal.instrumentation.cashing.CacheRegistry;
+import io.gammax.internal.instrumentation.transform.GammaTransformer;
+import io.gammax.internal.util.GammaJarCreator;
 
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
@@ -14,7 +14,7 @@ import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.List;
 
-public class MixinStart {
+public class GammaStart {
 
     private static Method addUrl;
 
@@ -22,7 +22,7 @@ public class MixinStart {
 
     static {
         try {
-            paths = MixinJarCreator.createAllMixinJars();
+            paths = GammaJarCreator.createAllMixinJars();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -37,8 +37,8 @@ public class MixinStart {
         System.out.println("|| GammaX started! Version: 1.0 beta");
         System.out.println("=====================================");
 
-        MixinRegistry.instance.loadCache();
-        inst.addTransformer(MixinTransformer.instance);
+        CacheRegistry.instance.loadCache();
+        inst.addTransformer(GammaTransformer.instance);
 
         try {
             addUrl = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
@@ -48,8 +48,8 @@ public class MixinStart {
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            MixinRegistry.instance.clearCache();
-            MixinJarManager.instance.close();
+            CacheRegistry.instance.clearCache();
+            JarManager.instance.close();
             JarFileClassLoader.instance.close();
         }));
     }

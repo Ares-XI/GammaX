@@ -10,18 +10,18 @@ import io.gammax.internal.format.functional.InjectMethod;
 import io.gammax.internal.format.functional.InterfaceImplementation;
 import io.gammax.internal.format.functional.UniqueField;
 import io.gammax.internal.format.functional.UniqueMethod;
-import io.gammax.internal.instrumentation.loaders.JarFileClassLoader;
-import io.gammax.internal.instrumentation.transform.MixinJsonParser;
-import io.gammax.internal.util.data.MixinConfigFormat;
+import io.gammax.internal.instrumentation.JarFileClassLoader;
+import io.gammax.internal.instrumentation.transform.GammaJsonParser;
+import io.gammax.internal.util.data.GammaConfigFormat;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
 
-public class MixinRegistry {
+public class CacheRegistry {
 
-    public static final MixinRegistry instance = new MixinRegistry();
+    public static final CacheRegistry instance = new CacheRegistry();
 
     private final Set<MixinClass> mixins = new HashSet<>();
 
@@ -32,14 +32,14 @@ public class MixinRegistry {
     public void clearCache() { mixins.clear(); }
 
     public boolean isTargetPath(String className) {
-        for(MixinClass mixin: MixinRegistry.instance.getCache()) if(mixin.getTargetClass().getName().equals(className)) return true;
+        for(MixinClass mixin: CacheRegistry.instance.getCache()) if(mixin.getTargetClass().getName().equals(className)) return true;
         return false;
     }
 
     public void loadCache() {
-        List<MixinConfigFormat> parsed = MixinJsonParser.instance.loadAllMixinConfigs();
+        List<GammaConfigFormat> parsed = GammaJsonParser.instance.loadAllMixinConfigs();
 
-        System.out.println("Find " + parsed.size() + " mixins.json files");
+        System.out.println("Find " + parsed.size() + " gamma.json files");
 
         if(parsed.toArray().length != 0) System.out.println("Start parsing");
         else {
@@ -47,7 +47,7 @@ public class MixinRegistry {
             return;
         }
 
-        for(MixinConfigFormat format: parsed) {
+        for(GammaConfigFormat format: parsed) {
             for(String path: format.mixins) {
                 try {
                     System.out.println(path);
@@ -174,5 +174,5 @@ public class MixinRegistry {
         }
     }
 
-    private MixinRegistry() {}
+    private CacheRegistry() {}
 }

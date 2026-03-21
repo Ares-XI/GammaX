@@ -66,8 +66,8 @@
                             <addClasspath>true</addClasspath>
                         </manifest>
                         <manifestEntries>
-                            <Premain-Class>io.gammax.internal.MixinStart</Premain-Class>
-                            <Agent-Class>io.gammax.internal.MixinStart</Agent-Class>
+                            <Premain-Class>io.gammax.internal.GammaStart</Premain-Class>
+                            <Agent-Class>io.gammax.internal.GammaStart</Agent-Class>
                             <Can-Redefine-Classes>true</Can-Redefine-Classes>
                             <Can-Retransform-Classes>true</Can-Retransform-Classes>
                             <Can-Set-Native-Method-Prefix>true</Can-Set-Native-Method-Prefix>

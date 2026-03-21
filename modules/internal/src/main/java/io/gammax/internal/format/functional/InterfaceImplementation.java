@@ -1,7 +1,7 @@
 package io.gammax.internal.format.functional;
 
 import io.gammax.internal.format.groups.FunctionalModifier;
-import io.gammax.internal.instrumentation.loaders.JarFileClassLoader;
+import io.gammax.internal.instrumentation.JarFileClassLoader;
 import io.gammax.internal.util.DescriptorFormat;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;

@@ -3,7 +3,7 @@ package io.gammax.internal.format.functional;
 import io.gammax.internal.format.groups.FunctionalModifier;
 import io.gammax.internal.format.data.ShadowField;
 import io.gammax.internal.format.data.ShadowMethod;
-import io.gammax.internal.instrumentation.loaders.JarFileClassLoader;
+import io.gammax.internal.instrumentation.JarFileClassLoader;
 import io.gammax.internal.util.DescriptorFormat;
 import io.gammax.internal.util.visitor.UniqueMethodVisitor;
 import org.objectweb.asm.*;

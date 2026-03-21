@@ -1,6 +1,6 @@
-package io.gammax.internal.instrumentation.loaders;
+package io.gammax.internal.instrumentation;
 
-import io.gammax.internal.instrumentation.cashing.MixinJarManager;
+import io.gammax.internal.instrumentation.cashing.JarManager;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -36,7 +36,7 @@ public class JarFileClassLoader extends ClassLoader implements AutoCloseable {
         if (byteCache.containsKey(className)) return byteCache.get(className);
 
         String classPath = className.replace('.', '/') + ".class";
-        Map<String, JarFile> jarFiles = MixinJarManager.instance.getJarFiles();
+        Map<String, JarFile> jarFiles = JarManager.instance.getJarFiles();
 
         for (JarFile jar : jarFiles.values()) {
             try {

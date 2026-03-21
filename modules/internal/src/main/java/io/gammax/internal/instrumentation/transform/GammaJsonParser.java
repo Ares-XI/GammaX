@@ -1,22 +1,22 @@
 package io.gammax.internal.instrumentation.transform;
 
 import com.google.gson.Gson;
-import io.gammax.internal.instrumentation.cashing.MixinJarManager;
-import io.gammax.internal.util.data.MixinConfigFormat;
+import io.gammax.internal.instrumentation.cashing.JarManager;
+import io.gammax.internal.util.data.GammaConfigFormat;
 
 import java.io.*;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-public class MixinJsonParser {
+public class GammaJsonParser {
 
-    public static final MixinJsonParser instance = new MixinJsonParser();
+    public static final GammaJsonParser instance = new GammaJsonParser();
 
     private final Gson GSON = new Gson();
 
-    public List<MixinConfigFormat> loadAllMixinConfigs() {
-        List<MixinConfigFormat> result = new ArrayList<>();
+    public List<GammaConfigFormat> loadAllMixinConfigs() {
+        List<GammaConfigFormat> result = new ArrayList<>();
 
         String[] extraDirs = {"libraries", "cache"};
         for (String dirName : extraDirs) {
@@ -24,7 +24,7 @@ public class MixinJsonParser {
             if (dir.exists() && dir.isDirectory()) {
                 for(File jarFile: findJarsWithMixins(dir)) {
                     try {
-                        MixinJarManager.instance.registerJar(jarFile);
+                        JarManager.instance.registerJar(jarFile);
                     } catch (Exception e) {
                         e.printStackTrace(System.err);
                     }
@@ -41,7 +41,7 @@ public class MixinJsonParser {
                 File jarFile = new File(part);
                 if (jarFile.exists()) {
                     try {
-                        MixinJarManager.instance.registerJar(jarFile);
+                        JarManager.instance.registerJar(jarFile);
                     } catch (Exception e) {
                         e.printStackTrace(System.err);
                     }
@@ -56,8 +56,8 @@ public class MixinJsonParser {
                 for (File jarFile : jarFiles) {
                     try {
                         try (JarFile jar = new JarFile(jarFile)) {
-                            if (jar.getJarEntry("mixins.json") != null) {
-                                MixinJarManager.instance.registerJar(jarFile);
+                            if (jar.getJarEntry("gamma.json") != null) {
+                                JarManager.instance.registerJar(jarFile);
                                 parseConfigFromJar(jar, result);
                             }
                         }
@@ -70,13 +70,13 @@ public class MixinJsonParser {
         return result;
     }
 
-    private void parseConfigFromJar(JarFile jar, List<MixinConfigFormat> result) {
+    private void parseConfigFromJar(JarFile jar, List<GammaConfigFormat> result) {
         try {
-            JarEntry entry = jar.getJarEntry("mixins.json");
+            JarEntry entry = jar.getJarEntry("gamma.json");
             try (InputStream is = jar.getInputStream(entry);
                  Reader reader = new InputStreamReader(is)) {
 
-                MixinConfigFormat config = GSON.fromJson(reader, MixinConfigFormat.class);
+                GammaConfigFormat config = GSON.fromJson(reader, GammaConfigFormat.class);
                 if (config != null) {
                     result.add(config);
                 }
@@ -104,5 +104,5 @@ public class MixinJsonParser {
         }
     }
 
-    private MixinJsonParser() {}
+    private GammaJsonParser() {}
 }

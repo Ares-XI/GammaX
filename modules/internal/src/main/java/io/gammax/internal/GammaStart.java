@@ -37,6 +37,7 @@ public class GammaStart {
         System.out.println("=====================================");
 
         registerLibraries();
+        registerClose();
 
         try {
             paths = GammaJarCreator.createAllMixinJars();
@@ -48,8 +49,6 @@ public class GammaStart {
 
         GammaCacheRegistry.instance.loadCache();
         inst.addTransformer(GammaTransformer.instance);
-
-        Runtime.getRuntime().addShutdownHook(new Thread(GammaStart::close));
     }
 
     private static void registerLibraries() {
@@ -70,28 +69,23 @@ public class GammaStart {
         }
     }
 
-    private static void close() {
-        try {
-            GammaCacheRegistry.instance.clearCache();
-            GammaClassLoader.instance.close();
-
-            File cacheDir = new File("mixin/.cache");
-            if (cacheDir.exists()) {
-                deleteRecursively(cacheDir);
+    private static void registerClose() { //TODO TODO
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                GammaCacheRegistry.instance.clearCache();
+                GammaClassLoader.instance.close();
+                File cacheDir = new File("mixin/.cache");
+                if (cacheDir.exists()) deleteRecursively(cacheDir);
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
             }
-        } catch (Exception e) {
-            e.printStackTrace(System.err);
-        }
+        }));
     }
 
     private static void deleteRecursively(File file) {
         if (file.isDirectory()) {
             File[] files = file.listFiles();
-            if (files != null) {
-                for (File f : files) {
-                    deleteRecursively(f);
-                }
-            }
+            if (files != null) for (File f : files) deleteRecursively(f);
         }
         file.delete();
     }

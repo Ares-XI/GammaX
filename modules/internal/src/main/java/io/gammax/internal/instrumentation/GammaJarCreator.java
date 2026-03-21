@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-public class GammaJarCreator {
+public class GammaJarCreator { //TODO TODO
 
     private static final Path CACHE_DIR = Paths.get("mixin/.cache");
     private static final Path PLUGINS_DIR = Paths.get("plugins");

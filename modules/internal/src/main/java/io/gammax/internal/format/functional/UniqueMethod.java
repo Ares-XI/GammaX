@@ -1,9 +1,9 @@
 package io.gammax.internal.format.functional;
 
-import io.gammax.internal.format.FunctionalModifier;
+import io.gammax.internal.format.groups.FunctionalModifier;
 import io.gammax.internal.format.data.ShadowField;
 import io.gammax.internal.format.data.ShadowMethod;
-import io.gammax.internal.instrumentation.cashing.MixinClassLoader;
+import io.gammax.internal.instrumentation.loaders.JarFileClassLoader;
 import io.gammax.internal.util.DescriptorFormat;
 import io.gammax.internal.util.visitor.UniqueMethodVisitor;
 import org.objectweb.asm.*;
@@ -65,7 +65,7 @@ public class UniqueMethod implements FunctionalModifier {
 
     private void extractMethodInstructions() {
         try {
-            byte[] mixinBytes = MixinClassLoader.instance.getClassBytes(method.getDeclaringClass().getName());
+            byte[] mixinBytes = JarFileClassLoader.instance.getClassBytes(method.getDeclaringClass().getName());
             if (mixinBytes == null) return;
 
             ClassReader reader = new ClassReader(mixinBytes);

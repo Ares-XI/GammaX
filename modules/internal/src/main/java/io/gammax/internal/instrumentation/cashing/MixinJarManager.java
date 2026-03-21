@@ -17,36 +17,6 @@ public class MixinJarManager implements AutoCloseable {
         return jarFiles;
     }
 
-//    public void append(URLClassLoader loader, String jarPath) {
-//        try {
-//            File jarFile = new File(jarPath);
-//
-//            if (!jarFile.exists()) {
-//                System.err.println("[GammaX] JAR file not found: " + jarFile.getAbsolutePath());
-//                return;
-//            }
-//
-//            String absolutePath = jarFile.getAbsolutePath();
-//            if (jarFiles.containsKey(absolutePath)) {
-//                System.out.println("[GammaX] JAR already registered: " + jarFile.getName());
-//            } else {
-//                JarFile jar = new JarFile(jarFile);
-//                jarFiles.put(absolutePath, jar);
-//                System.out.println("[GammaX] registered JAR: " + jarFile.getName());
-//            }
-//
-//            Method addUrl = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
-//            addUrl.setAccessible(true);
-//            addUrl.invoke(loader, jarFile.toURI().toURL());
-//
-//            System.out.println("[GammaX] added " + jarFile.getName() + " to classpath");
-//
-//        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException | IOException e) {
-//            System.err.println("[GammaX] Error adding JAR to classloader: " + jarPath);
-//            e.printStackTrace(System.err);
-//        }
-//    }
-
     public JarFile getJarFile(String packageName) {
         String packagePath = packageName.replace('.', '/');
 

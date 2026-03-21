@@ -7,13 +7,14 @@ import io.gammax.internal.format.functional.InjectMethod;
 import io.gammax.internal.format.functional.InterfaceImplementation;
 import io.gammax.internal.format.functional.UniqueField;
 import io.gammax.internal.format.functional.UniqueMethod;
-import io.gammax.internal.instrumentation.cashing.MixinClassLoader;
+import io.gammax.internal.format.groups.ValidCheck;
+import io.gammax.internal.instrumentation.loaders.JarFileClassLoader;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Modifier;
 
-public class MixinClass {
-    private final Class<?> mixinClazz;
+public class MixinClass implements ValidCheck {
+    private final Class<?> mixinClass;
 
     private final Class<?> targetClass;
 
@@ -32,7 +33,7 @@ public class MixinClass {
     private final boolean isValid;
 
     public MixinClass(
-            @NotNull Class<?> clazz,
+            @NotNull Class<?> mixinClass,
             @NotNull ShadowField[] shadowFields,
             @NotNull UniqueField[] uniqueFields,
             @NotNull ShadowMethod[] shadowMethods,
@@ -42,13 +43,13 @@ public class MixinClass {
     ) {
         boolean add = false;
 
-        if(clazz.isAnnotation() || clazz.isInterface() || clazz.isEnum()) new IllegalArgumentException("@Mixin class must be abstract").printStackTrace(System.err);
-        if(!Modifier.isAbstract(clazz.getModifiers())) new IllegalArgumentException("@Mixin class must be abstract").printStackTrace(System.err);
-        if(!clazz.isAnnotationPresent(Mixin.class)) new IllegalArgumentException("class must be annotated by @Mixin").printStackTrace(System.err);
+        if(mixinClass.isAnnotation() || mixinClass.isInterface() || mixinClass.isEnum()) new IllegalArgumentException("@Mixin class must be abstract").printStackTrace(System.err);
+        if(!Modifier.isAbstract(mixinClass.getModifiers())) new IllegalArgumentException("@Mixin class must be abstract").printStackTrace(System.err);
+        if(!mixinClass.isAnnotationPresent(Mixin.class)) new IllegalArgumentException("class must be annotated by @Mixin").printStackTrace(System.err);
         else add = true;
 
-        this.mixinClazz = clazz;
-        this.targetClass = clazz.getAnnotation(Mixin.class).value();
+        this.mixinClass = mixinClass;
+        this.targetClass = mixinClass.getAnnotation(Mixin.class).value();
         this.shadowFields = shadowFields;
         this.uniqueFields = uniqueFields;
         this.shadowMethods = shadowMethods;
@@ -57,8 +58,8 @@ public class MixinClass {
         this.interfaceImplementations = interfaceImplementations;
 
         try {
-            MixinClassLoader.instance.loadClass(mixinClazz.getName());
-            MixinClassLoader.instance.loadClass(targetClass.getName());
+            JarFileClassLoader.instance.loadClass(mixinClass.getName());
+            JarFileClassLoader.instance.loadClass(targetClass.getName());
         } catch (ClassNotFoundException e) {
             e.printStackTrace(System.err);
             add = false;
@@ -68,13 +69,14 @@ public class MixinClass {
     }
 
     public Class<?> getMixinClass() {
-        return mixinClazz;
+        return mixinClass;
     }
 
     public Class<?> getTargetClass() {
         return targetClass;
     }
 
+    @Override
     public boolean isValid() {
         return isValid;
     }

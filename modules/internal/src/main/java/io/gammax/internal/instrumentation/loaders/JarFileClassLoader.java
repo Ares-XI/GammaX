@@ -1,4 +1,6 @@
-package io.gammax.internal.instrumentation.cashing;
+package io.gammax.internal.instrumentation.loaders;
+
+import io.gammax.internal.instrumentation.cashing.MixinJarManager;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -8,9 +10,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-public class MixinClassLoader extends ClassLoader implements AutoCloseable {
+public class JarFileClassLoader extends ClassLoader implements AutoCloseable {
 
-    public static final MixinClassLoader instance = new MixinClassLoader();
+    public static final JarFileClassLoader instance = new JarFileClassLoader();
 
     private final Map<String, byte[]> byteCache = new ConcurrentHashMap<>();
     private final Map<String, Class<?>> classCache = new ConcurrentHashMap<>();
@@ -64,5 +66,5 @@ public class MixinClassLoader extends ClassLoader implements AutoCloseable {
         classCache.clear();
     }
 
-    private MixinClassLoader() {}
+    private JarFileClassLoader() {}
 }

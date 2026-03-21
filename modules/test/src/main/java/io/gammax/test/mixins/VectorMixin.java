@@ -8,7 +8,7 @@ import io.gammax.test.access.VectorAccess;
 import org.bukkit.util.Vector;
 
 @Mixin(Vector.class)
-public abstract class VectorMixin {
+public abstract class VectorMixin implements VectorAccess {
 
     @Shadow
     protected double x;
@@ -28,25 +28,25 @@ public abstract class VectorMixin {
     @Unique
     private String lastOperation;
 
-//    @Override
+    @Override
     @Unique
     public boolean isZeroS() {
         return Math.abs(x) < EPSILON && Math.abs(y) < EPSILON && Math.abs(z) < EPSILON;
     }
 
-//    @Override
+    @Override
     @Unique
     public String getStats() {
         return String.format("Vector{ops=%d, last='%s', pos=(%.2f,%.2f,%.2f)}", operationCount, lastOperation, x, y, z);
     }
 
-//    @Override
+    @Override
     @Unique
     public int getOperationCount() {
         return operationCount;
     }
 
-//    @Override
+    @Override
     @Unique
     public String getLastOperation() {
         return lastOperation;

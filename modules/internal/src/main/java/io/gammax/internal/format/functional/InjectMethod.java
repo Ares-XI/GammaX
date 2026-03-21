@@ -3,12 +3,12 @@ package io.gammax.internal.format.functional;
 import io.gammax.api.*;
 import io.gammax.api.util.At;
 import io.gammax.api.util.Signature;
-import io.gammax.internal.format.FunctionalModifier;
+import io.gammax.internal.format.groups.FunctionalModifier;
 import io.gammax.internal.format.data.ArgumentParameter;
 import io.gammax.internal.format.data.LocalParameter;
 import io.gammax.internal.format.data.ShadowField;
 import io.gammax.internal.format.data.ShadowMethod;
-import io.gammax.internal.instrumentation.cashing.MixinClassLoader;
+import io.gammax.internal.instrumentation.loaders.JarFileClassLoader;
 import io.gammax.internal.util.DescriptorFormat;
 import io.gammax.internal.util.data.TargetData;
 import io.gammax.internal.util.visitor.InjectMethodVisitor;
@@ -71,7 +71,7 @@ public class InjectMethod implements FunctionalModifier {
 
     private void extractMethodInstructions() {
         try {
-            byte[] mixinBytes = MixinClassLoader.instance.getClassBytes(method.getDeclaringClass().getName());
+            byte[] mixinBytes = JarFileClassLoader.instance.getClassBytes(method.getDeclaringClass().getName());
             if (mixinBytes == null) {
                 System.out.println("[Inject] mixinBytes = null for " + method.getName());
                 return;

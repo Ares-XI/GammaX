@@ -1,4 +1,4 @@
-package io.gammax.internal.instrumentation;
+package io.gammax.internal.instrumentation.cashing;
 
 import io.gammax.api.*;
 import io.gammax.internal.format.*;
@@ -10,7 +10,7 @@ import io.gammax.internal.format.functional.InjectMethod;
 import io.gammax.internal.format.functional.InterfaceImplementation;
 import io.gammax.internal.format.functional.UniqueField;
 import io.gammax.internal.format.functional.UniqueMethod;
-import io.gammax.internal.instrumentation.cashing.MixinClassLoader;
+import io.gammax.internal.instrumentation.loaders.JarFileClassLoader;
 import io.gammax.internal.instrumentation.transform.MixinJsonParser;
 import io.gammax.internal.util.data.MixinConfigFormat;
 
@@ -51,7 +51,7 @@ public class MixinRegistry {
             for(String path: format.mixins) {
                 try {
                     System.out.println(path);
-                    Class<?> clazz = MixinClassLoader.instance.loadClass(path);
+                    Class<?> clazz = JarFileClassLoader.instance.loadClass(path);
 
                     List<ShadowField> shadowFieldsList = new ArrayList<>();
                     List<ShadowMethod> shadowMethodsList = new ArrayList<>();

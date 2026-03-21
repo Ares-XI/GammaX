@@ -1,6 +1,7 @@
 package io.gammax.internal.format.functional;
 
-import io.gammax.internal.format.FunctionalModifier;
+import io.gammax.internal.format.groups.FunctionalModifier;
+import io.gammax.internal.instrumentation.loaders.JarFileClassLoader;
 import io.gammax.internal.util.DescriptorFormat;
 import org.objectweb.asm.*;
 import org.objectweb.asm.tree.*;
@@ -9,7 +10,18 @@ import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
 
-public record InterfaceImplementation(Class<?> interfaceClass) implements FunctionalModifier {
+public class InterfaceImplementation implements FunctionalModifier {
+
+    private final Class<?> interfaceClass;
+
+    public InterfaceImplementation(Class<?> interfaceClass) {
+        this.interfaceClass = interfaceClass;
+        try {
+            JarFileClassLoader.instance.loadClass(interfaceClass.getName());
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace(System.err);
+        }
+    }
 
     @Override
     public byte[] modify(byte[] classBytes) {

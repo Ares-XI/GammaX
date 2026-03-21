@@ -17,9 +17,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
 
-public class CacheRegistry {
+public class GammaCacheRegistry {
 
-    public static final CacheRegistry instance = new CacheRegistry();
+    public static final GammaCacheRegistry instance = new GammaCacheRegistry();
 
     private final Set<MixinClass> mixins = new HashSet<>();
 
@@ -27,10 +27,12 @@ public class CacheRegistry {
         return mixins.toArray(new MixinClass[0]);
     }
 
-    public void clearCache() { mixins.clear(); }
+    public void clearCache() {
+        mixins.clear();
+    }
 
     public boolean isTargetPath(String className) {
-        for(MixinClass mixin: CacheRegistry.instance.getCache()) if(mixin.getTargetClass().getName().equals(className)) return true;
+        for(MixinClass mixin: GammaCacheRegistry.instance.getCache()) if(mixin.getTargetClass().getName().equals(className)) return true;
         return false;
     }
 
@@ -172,5 +174,5 @@ public class CacheRegistry {
         }
     }
 
-    private CacheRegistry() {}
+    private GammaCacheRegistry() {}
 }

@@ -46,7 +46,7 @@ public class GammaTransformer implements ClassFileTransformer {
         for(String str: unsupportedPaths) if(className.startsWith(str)) return null;
 
         if ((className.startsWith("org/bukkit/") || className.startsWith("net/minecraft/server/")) && !isUnlock) {
-            for (Path path : GammaStart.paths) {
+            for (Path path : GammaStart.getPaths()) {
                 try (JarFile jarFile = new JarFile(String.valueOf(path))) {
                     GammaStart.getAddUrl().setAccessible(true);
                     GammaStart.getAddUrl().invoke(loader, path.toUri().toURL());
@@ -65,8 +65,8 @@ public class GammaTransformer implements ClassFileTransformer {
             System.out.println("parent: " + loader.getParent().getParent());
         }
 
-        if(CacheRegistry.instance.isTargetPath(className.replace("/", "."))) {
-            for (MixinClass mixin : CacheRegistry.instance.getCache()) {
+        if(GammaCacheRegistry.instance.isTargetPath(className.replace("/", "."))) {
+            for (MixinClass mixin : GammaCacheRegistry.instance.getCache()) {
                 if (mixin.getTargetClass().getName().replace('.', '/').equals(className)) {
                     List<InjectMethod> injectors = Arrays.asList(mixin.injectMethods);
                     injectors.sort(Comparator.comparingInt(InjectMethod::getPriority));

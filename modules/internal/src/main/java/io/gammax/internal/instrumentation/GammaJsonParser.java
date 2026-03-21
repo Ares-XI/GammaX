@@ -1,10 +1,10 @@
 package io.gammax.internal.instrumentation;
 
 import com.google.gson.Gson;
-//import io.gammax.internal.instrumentation.cashing.JarManager;
 import io.gammax.internal.util.data.GammaConfigFormat;
 
 import java.io.*;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -18,38 +18,40 @@ public class GammaJsonParser {
     public List<GammaConfigFormat> loadAllMixinConfigs() {
         List<GammaConfigFormat> result = new ArrayList<>();
 
-        String[] extraDirs = {"libraries", "cache"};
-        for (String dirName : extraDirs) {
-            File dir = new File(dirName);
-            if (dir.exists() && dir.isDirectory()) {
-                for(File jarFile: findJarsWithMixins(dir)) {
-                    try {
-                        GammaClassLoader.instance.registerJar(jarFile);
-                    } catch (Exception e) {
-                        e.printStackTrace(System.err);
-                    }
-                }
-            }
-        }
-
-        String command = System.getProperty("sun.java.command");
-        if (command == null) return null;
-        String[] parts = command.split(" ");
-
-        for (String part : parts) {
-            if (part.endsWith(".jar") && !part.startsWith("-javaagent:")) {
-                File jarFile = new File(part);
-                if (jarFile.exists()) {
-                    try {
-                        GammaClassLoader.instance.registerJar(jarFile);
-                    } catch (Exception e) {
-                        e.printStackTrace(System.err);
-                    }
-                }
-            }
-        }
+//        String[] extraDirs = {"libraries", "cache", "versions"};
+//
+//        for (String dirName : extraDirs) {
+//            File dir = new File(dirName);
+//            if (dir.exists() && dir.isDirectory()) {
+//                for(File jarFile: findJarsWithMixins(dir)) {
+//                    try {
+//                        GammaClassLoader.instance.registerJar(jarFile);
+//                    } catch (Exception e) {
+//                        e.printStackTrace(System.err);
+//                    }
+//                }
+//            }
+//        }
+//
+//        String command = System.getProperty("sun.java.command");
+//        if (command == null) return null;
+//        String[] parts = command.split(" ");
+//
+//        for (String part : parts) {
+//            if (part.endsWith(".jar") && !part.startsWith("-javaagent:")) {
+//                File jarFile = new File(part);
+//                if (jarFile.exists()) {
+//                    try {
+//                        GammaClassLoader.instance.registerJar(jarFile);
+//                    } catch (Exception e) {
+//                        e.printStackTrace(System.err);
+//                    }
+//                }
+//            }
+//        }
 
         File pluginsDir = new File("plugins");
+
         if (pluginsDir.exists()) {
             File[] jarFiles = pluginsDir.listFiles((dir, name) -> name.endsWith(".jar"));
             if (jarFiles != null) {
@@ -67,6 +69,7 @@ public class GammaJsonParser {
                 }
             }
         }
+
         return result;
     }
 
@@ -86,23 +89,23 @@ public class GammaJsonParser {
         }
     }
 
-    private List<File> findJarsWithMixins(File dir) {
-        List<File> jars = new ArrayList<>();
-        scan(dir, jars);
-        return jars;
-    }
+//    private List<File> findJarsWithMixins(File dir) {
+//        List<File> jars = new ArrayList<>();
+//        scan(dir, jars);
+//        return jars;
+//    }
 
-    private void scan(File dir, List<File> jars) {
-        if (!dir.isDirectory()) return;
-
-        File[] files = dir.listFiles();
-        if (files == null) return;
-
-        for (File file : files) {
-            if (file.isDirectory()) scan(file, jars);
-            if (file.isFile() && file.getName().endsWith(".jar")) jars.add(file);
-        }
-    }
+//    private void scan(File dir, List<File> jars) {
+//        if (!dir.isDirectory()) return;
+//
+//        File[] files = dir.listFiles();
+//        if (files == null) return;
+//
+//        for (File file : files) {
+//            if (file.isDirectory()) scan(file, jars);
+//            if (file.isFile() && file.getName().endsWith(".jar")) jars.add(file);
+//        }
+//    }
 
     private GammaJsonParser() {}
 }

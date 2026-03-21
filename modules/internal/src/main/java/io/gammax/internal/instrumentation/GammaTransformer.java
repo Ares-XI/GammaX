@@ -1,4 +1,4 @@
-package io.gammax.internal.instrumentation.transform;
+package io.gammax.internal.instrumentation;
 
 import io.gammax.internal.GammaStart;
 import io.gammax.internal.format.*;
@@ -6,7 +6,6 @@ import io.gammax.internal.format.functional.InjectMethod;
 import io.gammax.internal.format.functional.InterfaceImplementation;
 import io.gammax.internal.format.functional.UniqueField;
 import io.gammax.internal.format.functional.UniqueMethod;
-import io.gammax.internal.instrumentation.cashing.CacheRegistry;
 
 import java.io.File;
 import java.io.IOException;

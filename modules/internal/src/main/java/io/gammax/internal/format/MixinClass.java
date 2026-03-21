@@ -8,7 +8,7 @@ import io.gammax.internal.format.functional.InterfaceImplementation;
 import io.gammax.internal.format.functional.UniqueField;
 import io.gammax.internal.format.functional.UniqueMethod;
 import io.gammax.internal.format.groups.ValidCheck;
-import io.gammax.internal.instrumentation.jar.JarFileClassLoader;
+import io.gammax.internal.instrumentation.GammaClassLoader;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Modifier;
@@ -58,8 +58,8 @@ public class MixinClass implements ValidCheck {
         this.interfaceImplementations = interfaceImplementations;
 
         try {
-            JarFileClassLoader.instance.loadClass(mixinClass.getName());
-            JarFileClassLoader.instance.loadClass(targetClass.getName());
+            GammaClassLoader.instance.loadClass(mixinClass.getName());
+            GammaClassLoader.instance.loadClass(targetClass.getName());
         } catch (ClassNotFoundException e) {
             e.printStackTrace(System.err);
             add = false;

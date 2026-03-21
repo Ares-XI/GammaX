@@ -1,10 +1,9 @@
 package io.gammax.internal;
 
-import io.gammax.internal.instrumentation.jar.JarFileClassLoader;
-import io.gammax.internal.instrumentation.cashing.JarManager;
-import io.gammax.internal.instrumentation.cashing.CacheRegistry;
-import io.gammax.internal.instrumentation.transform.GammaTransformer;
-import io.gammax.internal.instrumentation.jar.GammaJarCreator;
+import io.gammax.internal.instrumentation.GammaClassLoader;
+import io.gammax.internal.instrumentation.CacheRegistry;
+import io.gammax.internal.instrumentation.GammaTransformer;
+import io.gammax.internal.instrumentation.GammaJarCreator;
 
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
@@ -49,8 +48,8 @@ public class GammaStart {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             CacheRegistry.instance.clearCache();
-            JarManager.instance.close();
-            JarFileClassLoader.instance.close();
+//            JarManager.instance.close();
+            GammaClassLoader.instance.close();
         }));
     }
 }

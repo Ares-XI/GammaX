@@ -1,4 +1,4 @@
-package io.gammax.internal.instrumentation.cashing;
+package io.gammax.internal.instrumentation;
 
 import io.gammax.api.*;
 import io.gammax.internal.format.*;
@@ -10,8 +10,6 @@ import io.gammax.internal.format.functional.InjectMethod;
 import io.gammax.internal.format.functional.InterfaceImplementation;
 import io.gammax.internal.format.functional.UniqueField;
 import io.gammax.internal.format.functional.UniqueMethod;
-import io.gammax.internal.instrumentation.jar.JarFileClassLoader;
-import io.gammax.internal.instrumentation.transform.GammaJsonParser;
 import io.gammax.internal.util.data.GammaConfigFormat;
 
 import java.lang.reflect.Field;
@@ -51,7 +49,7 @@ public class CacheRegistry {
             for(String path: format.mixins) {
                 try {
                     System.out.println(path);
-                    Class<?> clazz = JarFileClassLoader.instance.loadClass(path);
+                    Class<?> clazz = GammaClassLoader.instance.loadClass(path);
 
                     List<ShadowField> shadowFieldsList = new ArrayList<>();
                     List<ShadowMethod> shadowMethodsList = new ArrayList<>();

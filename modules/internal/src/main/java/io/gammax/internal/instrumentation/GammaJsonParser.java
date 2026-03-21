@@ -1,7 +1,7 @@
-package io.gammax.internal.instrumentation.transform;
+package io.gammax.internal.instrumentation;
 
 import com.google.gson.Gson;
-import io.gammax.internal.instrumentation.cashing.JarManager;
+//import io.gammax.internal.instrumentation.cashing.JarManager;
 import io.gammax.internal.util.data.GammaConfigFormat;
 
 import java.io.*;
@@ -24,7 +24,7 @@ public class GammaJsonParser {
             if (dir.exists() && dir.isDirectory()) {
                 for(File jarFile: findJarsWithMixins(dir)) {
                     try {
-                        JarManager.instance.registerJar(jarFile);
+                        GammaClassLoader.instance.registerJar(jarFile);
                     } catch (Exception e) {
                         e.printStackTrace(System.err);
                     }
@@ -41,7 +41,7 @@ public class GammaJsonParser {
                 File jarFile = new File(part);
                 if (jarFile.exists()) {
                     try {
-                        JarManager.instance.registerJar(jarFile);
+                        GammaClassLoader.instance.registerJar(jarFile);
                     } catch (Exception e) {
                         e.printStackTrace(System.err);
                     }
@@ -57,7 +57,7 @@ public class GammaJsonParser {
                     try {
                         try (JarFile jar = new JarFile(jarFile)) {
                             if (jar.getJarEntry("gamma.json") != null) {
-                                JarManager.instance.registerJar(jarFile);
+                                GammaClassLoader.instance.registerJar(jarFile);
                                 parseConfigFromJar(jar, result);
                             }
                         }

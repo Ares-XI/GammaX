@@ -8,7 +8,7 @@ import io.gammax.internal.format.data.ArgumentParameter;
 import io.gammax.internal.format.data.LocalParameter;
 import io.gammax.internal.format.data.ShadowField;
 import io.gammax.internal.format.data.ShadowMethod;
-import io.gammax.internal.instrumentation.jar.JarFileClassLoader;
+import io.gammax.internal.instrumentation.GammaClassLoader;
 import io.gammax.internal.util.DescriptorFormat;
 import io.gammax.internal.util.data.TargetData;
 import io.gammax.internal.util.visitor.InjectMethodVisitor;
@@ -71,7 +71,7 @@ public class InjectMethod implements FunctionalModifier {
 
     private void extractMethodInstructions() {
         try {
-            byte[] mixinBytes = JarFileClassLoader.instance.getClassBytes(method.getDeclaringClass().getName());
+            byte[] mixinBytes = GammaClassLoader.instance.getClassBytes(method.getDeclaringClass().getName());
             if (mixinBytes == null) {
                 System.out.println("[Inject] mixinBytes = null for " + method.getName());
                 return;

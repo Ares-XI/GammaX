@@ -1,27 +1,38 @@
-package io.gammax.internal.instrumentation.jar;
-
-import io.gammax.internal.instrumentation.cashing.JarManager;
+package io.gammax.internal.instrumentation;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-public class JarFileClassLoader extends ClassLoader implements AutoCloseable {
+public class GammaClassLoader extends URLClassLoader implements AutoCloseable {
 
-    public static final JarFileClassLoader instance = new JarFileClassLoader();
+    public static final GammaClassLoader instance = new GammaClassLoader();
 
     private final Map<String, byte[]> byteCache = new ConcurrentHashMap<>();
     private final Map<String, Class<?>> classCache = new ConcurrentHashMap<>();
+    private final Map<String, JarFile> jarFiles = new HashMap<>();
+
+    public Map<String, JarFile> getJarFiles() {
+        return jarFiles;
+    }
+
+    public void registerJar(File jarFile) throws Exception {
+        JarFile jar = new JarFile(jarFile);
+        jarFiles.put(jarFile.getAbsolutePath(), jar);
+        super.addURL(jarFile.toURI().toURL());
+    }
 
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
-        if (classCache.containsKey(name)) {
-            return classCache.get(name);
-        }
+        if (classCache.containsKey(name)) return classCache.get(name);
 
         byte[] bytes = getClassBytes(name);
         if (bytes == null) throw new ClassNotFoundException(name);
@@ -36,7 +47,7 @@ public class JarFileClassLoader extends ClassLoader implements AutoCloseable {
         if (byteCache.containsKey(className)) return byteCache.get(className);
 
         String classPath = className.replace('.', '/') + ".class";
-        Map<String, JarFile> jarFiles = JarManager.instance.getJarFiles();
+        Map<String, JarFile> jarFiles = getJarFiles();
 
         for (JarFile jar : jarFiles.values()) {
             try {
@@ -60,11 +71,21 @@ public class JarFileClassLoader extends ClassLoader implements AutoCloseable {
         return null;
     }
 
-
+    @Override
     public void close() {
         byteCache.clear();
         classCache.clear();
+        for (JarFile jar : jarFiles.values()) {
+            try {
+                jar.close();
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+            }
+        }
+        jarFiles.clear();
     }
 
-    private JarFileClassLoader() {}
+    private GammaClassLoader() {
+        super(new URL[0]);
+    }
 }
